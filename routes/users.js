@@ -1,16 +1,12 @@
 const { Router } = require("express");
 
 const userController = require("../controllers/userController");
-const { authenticated } = require("../middlewares/auth");
 
 const router = new Router();
 
 //  @desc   Login Handle
 //  @route  POST /users/login
 router.post("/login", userController.handleLogin);
-
-//  @desc   Logout Handle
-//  @route  GET /users/logout
 
 
 

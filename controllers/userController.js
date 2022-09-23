@@ -91,7 +91,7 @@ exports.handleForgetPassword = async (req, res, next) => {
     // `
     // );
 
-    res.status(200).json("ایمیل فرستاده شد");
+    res.status(200).json({message:"ایمیل فرستاده شد"});
   } catch (error) {
     next(error);
   }
@@ -123,7 +123,7 @@ exports.handleResetPassword = async (req, res, next) => {
 
     user.password = password;
     await user.save();
-res.status(200).json("حله")
+res.status(200).json({message:"حله"})
   } catch (error) {
     next(error)
   }
