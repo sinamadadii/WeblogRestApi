@@ -8,10 +8,10 @@ let CAPTCHA_NUM;
 exports.getIndex = async (req, res, next) => {
   try {
     const numberOfPosts = await Blog.find({
-      status: "public",
+      isAccept: "accept",
     }).countDocuments();
 
-    const posts = await Blog.find({ status: "public" }).sort({
+    const posts = await Blog.find({ isAccept: "accept" }).sort({
       createdAt: "desc",
     });
     if (!posts) {

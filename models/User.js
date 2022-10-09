@@ -4,43 +4,72 @@ const bcrypt = require("bcryptjs");
 const { schema } = require("./secure/userValidation");
 
 const userSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: [true, "نام و نام خانوادگی الزامی می باشد"],
-        trim: true,
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    password: {
-        type: String,
-        required: true,
-        minlength: 4,
-        maxlength: 255,
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    },
+  name: {
+    type: String,
+    required: [true, "نام و نام خانوادگی الزامی می باشد"],
+    trim: true,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: true,
+    minlength: 4,
+    maxlength: 255,
+  },
+  phoneNumber:{
+    type:String
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  type: {
+    type: String,
+    enum: ["tourist", "tour","admin"],
+    required:true,
+  },
+  profilePhoto:{
+    type:String,
+    default:"defaultProfile.jpg"
+
+  },
+  profilePhotos:{
+    type:Array,
+    maxlength:12,
+    
+  },
+  description:{
+    type:String
+  },
+  rate:{
+    type:Number,
+    default:0,
+  },
+  joinedTours:{
+    type:Array
+  }
+  
 });
 
 userSchema.statics.userValidation = function (body) {
-    return schema.validate(body, { abortEarly: false });
+  return schema.validate(body, { abortEarly: false });
 };
 
 userSchema.pre("save", function (next) {
-    let user = this;
+  let user = this;
 
-    if (!user.isModified("password")) return next();
+  if (!user.isModified("password")) return next();
 
-    bcrypt.hash(user.password, 10, (err, hash) => {
-        if (err) return next(err);
+  bcrypt.hash(user.password, 10, (err, hash) => {
+    if (err) return next(err);
 
-        user.password = hash;
-        next();
-    });
+    user.password = hash;
+    next();
+  });
 });
 
 module.exports = mongoose.model("User", userSchema);

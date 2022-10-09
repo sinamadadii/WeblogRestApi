@@ -14,13 +14,13 @@ const blogSchmea = new mongoose.Schema({
         type: String,
         required: true,
     },
-    status: {
+    isAccept: {
         type: String,
-        default: "public",
-        enum: ["private", "public"],
+        default: "waiting",
+        enum: ["reject", "accept","waiting"],
     },
     thumbnail: {
-        type: String,
+        type: Array,
         required: true,
     },
     user: {
@@ -31,6 +31,20 @@ const blogSchmea = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    date:{
+        type:Date
+    },
+    durationTime:{
+        type:String,
+        enum:["1day","2days","3days","4days","5days","6days","1week","10days","2week","20days","1month"]
+    },
+    joinedUsers:{
+        type:Array
+    },
+    capacity:{
+        type:Number,
+        required:true
+    }
 });
 
 blogSchmea.index({ title: "text" });

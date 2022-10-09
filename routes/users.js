@@ -1,6 +1,7 @@
 const { Router } = require("express");
 
 const userController = require("../controllers/userController");
+const { authenticated } = require("../middlewares/auth");
 
 const router = new Router();
 
@@ -9,6 +10,7 @@ const router = new Router();
 router.post("/login", userController.handleLogin);
 
 
+router.get("/isAuth", userController.isAuth);
 
 //  @desc   Handle Forget Password
 //  @route  POST /users/forget-password
