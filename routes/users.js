@@ -9,6 +9,8 @@ const router = new Router();
 //  @route  POST /users/login
 router.post("/login", userController.handleLogin);
 
+router.put("/accept-tour", authenticated, userController.acceptTour);
+router.put("/edit-profile", authenticated, userController.editProfile);
 
 router.get("/isAuth", userController.isAuth);
 
@@ -18,7 +20,7 @@ router.post("/forget-password", userController.handleForgetPassword);
 
 //  @desc   Handle reset Password
 //  @route  POST /users/reset-password/:token
-router.post("/reset-password/:token", userController.handleResetPassword);
+router.post("/reset-password/:token",userController.handleResetPassword);
 
 //  @desc   Register Handle
 //  @route  POST /users/register

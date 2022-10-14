@@ -51,6 +51,14 @@ const userSchema = new mongoose.Schema({
   },
   joinedTours:{
     type:Array
+  },
+  isAccept:{
+    type:String,
+    default:'accept',
+    enum:['accept','waiting','reject']
+  },
+  permissions:{
+    type:Array
   }
   
 });

@@ -6,6 +6,10 @@ const adminController = require("../controllers/adminController");
 const router = new Router();
 router.get("/getMyPosts/:id",authenticated, adminController.getMyPosts);
 router.get("/requestedPosts",authenticated, adminController.requestedPosts);
+router.get("/requestedTours",authenticated, adminController.requestedTours);
+router.put("/add-permissions",authenticated, adminController.addPermissions);
+router.get("/get-permissions/:id", authenticated,adminController.permissions);
+
 router.get("/get-gallery/:id", authenticated,adminController.gallery);
 router.get("/getsinglePost/:id",authenticated, adminController.getSinglePost);
 router.post("/add-gallery",authenticated, adminController.createGallery);
