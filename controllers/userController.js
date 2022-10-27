@@ -20,7 +20,7 @@ exports.isAuth = (req, res, next) => {
       throw error;
     }
     // req.userId=decodedToken.user.userId
-    res.status(200).json();
+    res.status(200).json(true);
   } catch (error) {
     next(error);
   }
@@ -230,16 +230,16 @@ exports.editProfile = async (req, res, next) => {
     res
       .status(200)
       .json({
-        token,
-        userId: user.id.toString(),
-        userEmail: user.email,
-        name: user.name,
-        type: "tour",
-        profilePhoto: user.profilePhoto,
-        description: user.description,
-        rate: user.rate,
-        isAccept: user.isAccept,
-        phoneNumber: user.phoneNumber,
+        message:'olala'
+        // userId: user.id.toString(),
+        // userEmail: user.email,
+        // name: user.name,
+        // type: user.type,
+        // profilePhoto: user.profilePhoto,
+        // description: user.description,
+        // rate: user.rate,
+        // isAccept: user.isAccept,
+        // phoneNumber: user.phoneNumber,
       });
   } catch (err) {
     next(err);

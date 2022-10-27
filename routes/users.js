@@ -10,7 +10,7 @@ const router = new Router();
 router.post("/login", userController.handleLogin);
 
 router.put("/accept-tour", authenticated, userController.acceptTour);
-router.put("/edit-profile", authenticated, userController.editProfile);
+router.post("/edit-profile", authenticated, userController.editProfile);
 
 router.get("/isAuth", userController.isAuth);
 
