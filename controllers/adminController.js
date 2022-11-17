@@ -360,6 +360,24 @@ exports.addSaveds = async (req, res, next) => {
     next(error);
   }
 };
+exports.unSaved = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    const posts = await user.saveds;
+    const post=posts.find((q)=>q._id.toString()===req.body.postId)
+
+    await posts.splice(post,1);
+    user.save();
+    res.status(200).json({ message: "حله" });
+  } catch (error) {
+    next(error);
+  }
+};
 exports.saveds = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
@@ -376,18 +394,15 @@ exports.saveds = async (req, res, next) => {
   }
 };
 exports.isSaved = async (req, res, next) => {
-
   try {
     const user = await User.findById(req.userId);
     const saveds = await user.saveds;
-    let uuu=false
+    let uuu = false;
 
     await saveds.forEach(async (element) => {
       if (element._id.toString() === (await req.body.postId)) {
-        uuu=true
-
+        uuu = true;
       }
-      
     });
     res.status(200).json(uuu);
   } catch (err) {
