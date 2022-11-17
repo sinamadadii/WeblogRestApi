@@ -49,7 +49,7 @@ const userSchema = new mongoose.Schema({
     type:Number,
     default:0,
   },
-  joinedTours:{
+  tours:{
     type:Array
   },
   isAccept:{
@@ -59,6 +59,15 @@ const userSchema = new mongoose.Schema({
   },
   permissions:{
     type:Array
+  },
+  money:{
+    type:Number,
+    default:0
+  },
+  saveds:{
+   type: Array,
+
+
   }
   
 });

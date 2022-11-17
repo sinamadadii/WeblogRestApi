@@ -46,9 +46,9 @@ exports.handleLogin = async (req, res, next) => {
           },
         },
         process.env.JWT_SECRET,
-        {
-          expiresIn: "1h",
-        }
+        // {
+        //   expiresIn: "1h",
+        // }
       );
       if (user.type == "admin") {
         res.status(200).json({

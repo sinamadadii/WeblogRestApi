@@ -9,6 +9,7 @@ const Gallery = require("../models/Gallery");
 
 const Blog = require("../models/Blog");
 const { fileFilter } = require("../utils/multer");
+const { getSinglePost } = require("./blogController");
 
 exports.getMyPosts = async (req, res, next) => {
   try {
@@ -165,8 +166,7 @@ exports.requestedTours = async (req, res, next) => {
       throw error;
     }
     users.forEach((e) => {
-      e.password=''
-      
+      e.password = "";
     });
     res.status(200).json(users);
   } catch (err) {
@@ -339,6 +339,57 @@ exports.permissions = async (req, res, next) => {
   try {
     const auser = await User.findById(req.params.id);
     res.status(200).json(auser.permissions);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.addSaveds = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    const post = await Blog.findById(req.body.postId);
+
+    await user.saveds.push(post);
+    user.save();
+    res.status(200).json({ message: "حله" });
+  } catch (error) {
+    next(error);
+  }
+};
+exports.saveds = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    const savs = await user.saveds;
+
+    res.status(200).json(savs);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.isSaved = async (req, res, next) => {
+
+  try {
+    const user = await User.findById(req.userId);
+    const saveds = await user.saveds;
+    let uuu=false
+
+    await saveds.forEach(async (element) => {
+      if (element._id.toString() === (await req.body.postId)) {
+        uuu=true
+
+      }
+      
+    });
+    res.status(200).json(uuu);
   } catch (err) {
     next(err);
   }

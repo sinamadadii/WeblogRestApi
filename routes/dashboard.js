@@ -14,6 +14,10 @@ router.get("/get-gallery/:id", authenticated,adminController.gallery);
 router.get("/getsinglePost/:id",authenticated, adminController.getSinglePost);
 router.post("/add-gallery",authenticated, adminController.createGallery);
 router.put("/join-tour",authenticated, adminController.joinTour);
+router.put("/save-tour",authenticated, adminController.addSaveds);
+router.get("/saveds",authenticated, adminController.saveds);
+router.post("/is-saved",authenticated, adminController.isSaved);
+
 router.put("/delte-galley/:name",authenticated, adminController.deleteGallery);
 
 //  @desc   Dashboard Delete Post
