@@ -21,7 +21,9 @@ const userSchema = new mongoose.Schema({
     maxlength: 255,
   },
   phoneNumber:{
-    type:String
+    type:String,
+    default:""
+
   },
   createdAt: {
     type: Date,
@@ -40,10 +42,14 @@ const userSchema = new mongoose.Schema({
   profilePhotos:{
     type:Array,
     maxlength:12,
+    default:["defaultProfile.jpg"]
+
     
   },
   description:{
-    type:String
+    type:String,
+    default:""
+
   },
   rate:{
     type:Number,
@@ -68,6 +74,9 @@ const userSchema = new mongoose.Schema({
    type: Array,
 
 
+  },
+  joinedTours:{
+    type:Array
   }
   
 });

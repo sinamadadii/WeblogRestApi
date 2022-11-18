@@ -305,6 +305,8 @@ exports.joinTour = async (req, res, next) => {
     const { _id, name, email, profilePhoto } = user;
     const profile = { _id, name, email, profilePhoto };
     await post.joinedUsers.push(profile);
+    // await user.joinedTours.push(post);
+
     post.save();
     res.status(200).json({ message: "حله" });
   } catch (err) {
@@ -369,9 +371,9 @@ exports.unSaved = async (req, res, next) => {
       throw error;
     }
     const posts = await user.saveds;
-    const post=posts.find((q)=>q._id.toString()===req.body.postId)
+    const post = posts.find((q) => q._id.toString() === req.body.postId);
 
-    await posts.splice(post,1);
+    await posts.splice(post, 1);
     user.save();
     res.status(200).json({ message: "حله" });
   } catch (error) {
@@ -393,6 +395,26 @@ exports.saveds = async (req, res, next) => {
     next(err);
   }
 };
+exports.joineds = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    const savs = await user.saveds;
+    const jonsz = Blog.find((q)=>{
+      q.joinedUsers.find((e)=>{
+        e._id.toString()==req.userId
+      })
+    });
+
+    res.status(200).json(jonsz);
+  } catch (err) {
+    next(err);
+  }
+};
 exports.isSaved = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
@@ -401,6 +423,22 @@ exports.isSaved = async (req, res, next) => {
 
     await saveds.forEach(async (element) => {
       if (element._id.toString() === (await req.body.postId)) {
+        uuu = true;
+      }
+    });
+    res.status(200).json(uuu);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.isJoined = async (req, res, next) => {
+  try {
+    const post = await Blog.findById(req.body.postId);
+    const joinedz = await post.joinedUsers;
+    let uuu = false;
+
+    await joinedz.forEach(async (element) => {
+      if (element._id.toString() === (await req.userId)) {
         uuu = true;
       }
     });

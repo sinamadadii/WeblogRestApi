@@ -18,7 +18,10 @@ router.put("/save-tour",authenticated, adminController.addSaveds);
 router.put("/unsave-tour",authenticated, adminController.unSaved);
 
 router.get("/saveds",authenticated, adminController.saveds);
+router.get("/joineds",authenticated, adminController.joineds);
+
 router.post("/is-saved",authenticated, adminController.isSaved);
+router.post("/is-joined",authenticated, adminController.isJoined);
 
 router.put("/delte-galley/:name",authenticated, adminController.deleteGallery);
 

@@ -245,3 +245,26 @@ exports.editProfile = async (req, res, next) => {
     next(err);
   }
 };
+exports.userProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("هیجی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+    res.status(200).json({
+      id:user._id,
+      name:user.name,
+      email:user.email,
+      phoneNumber:user.phoneNumber,
+      createdAt:user.createdAt,
+      type:user.type,
+      profilePhotos:user.profilePhotos,
+      description:user.description,
+      
+    })
+  } catch (err) {
+    next(err);
+  }
+};
