@@ -85,7 +85,7 @@ exports.editPost = async (req, res, next) => {
 
 exports.deletePost = async (req, res, next) => {
   try {
-    const post = await Blog.findOneAndDelete(req.params.id);
+    await Blog.findByIdAndDelete(req.params.id);
     post.thumbnail.forEach((item) => {
       const filePath = `${appRoot}/public/uploads/thumbnails/${item}`;
       fs.unlink(filePath, (err) => {
@@ -300,14 +300,41 @@ exports.gallery = async (req, res, next) => {
 };
 exports.joinTour = async (req, res, next) => {
   try {
-    const post = await Blog.findById(req.body.postId);
     const user = await User.findById(req.userId);
     const { _id, name, email, profilePhoto } = user;
     const profile = { _id, name, email, profilePhoto };
+    const post = await Blog.findById(req.body.postId);
+
     await post.joinedUsers.push(profile);
-    // await user.joinedTours.push(post);
+    await user.joinedTours.push(post);
 
     post.save();
+    user.save();
+    res.status(200).json({ message: "حله" });
+  } catch (err) {
+    next(err);
+  }
+};
+exports.unJoinTour = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    const post = await Blog.findById(req.body.postId);
+    const joinedUsersTour = await post.joinedUsers;
+    const joinedToursUser = await user.joinedTours;
+    const tour = joinedToursUser.find(
+      (q) => q._id.toString() === req.body.postId
+    );
+    const joineduser = joinedUsersTour.find(
+      (q) => q._id.toString() === req.userId
+    );
+    const { _id, name, email, profilePhoto } = joineduser;
+    const profile = { _id, name, email, profilePhoto };
+
+    await joinedToursUser.splice(tour, 1);
+    await joinedUsersTour.splice(profile, 1);
+
+    post.save();
+    user.save();
     res.status(200).json({ message: "حله" });
   } catch (err) {
     next(err);
@@ -403,14 +430,8 @@ exports.joineds = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-    const savs = await user.saveds;
-    const jonsz = Blog.find((q)=>{
-      q.joinedUsers.find((e)=>{
-        e._id.toString()==req.userId
-      })
-    });
 
-    res.status(200).json(jonsz);
+    res.status(200).json(user.joinedTours);
   } catch (err) {
     next(err);
   }
@@ -434,6 +455,11 @@ exports.isSaved = async (req, res, next) => {
 exports.isJoined = async (req, res, next) => {
   try {
     const post = await Blog.findById(req.body.postId);
+    if (!post) {
+      const error = new Error("چنین پستی نیست");
+      error.statusCode = 404;
+      throw error;
+    }
     const joinedz = await post.joinedUsers;
     let uuu = false;
 

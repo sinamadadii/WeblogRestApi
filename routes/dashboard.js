@@ -14,6 +14,8 @@ router.get("/get-gallery/:id", authenticated,adminController.gallery);
 router.get("/getsinglePost/:id",authenticated, adminController.getSinglePost);
 router.post("/add-gallery",authenticated, adminController.createGallery);
 router.put("/join-tour",authenticated, adminController.joinTour);
+router.put("/unjoin-tour",authenticated, adminController.unJoinTour);
+
 router.put("/save-tour",authenticated, adminController.addSaveds);
 router.put("/unsave-tour",authenticated, adminController.unSaved);
 

@@ -45,6 +45,14 @@ const blogSchmea = new mongoose.Schema({
         type:Number,
         required:true
     },
+    price:{
+        type:Number
+    },
+    type:{
+        type:String,
+        enum:["forest","sea","offroad","desert","historical","mountain"]
+
+    }
     
 });
 

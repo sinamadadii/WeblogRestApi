@@ -23,5 +23,6 @@ router.get("/captcha.png", blogController.getCaptcha);
 //  @desc   Handle Contact Page
 //  @route  POST /contact
 router.post("/contact", blogController.handleContactPage);
+router.post("/searchtour", blogController.searchTour);
 
 module.exports = router;

@@ -104,22 +104,22 @@ exports.getPopularTours = async (req, res, next) => {
 };
 exports.getSinglePost = async (req, res, next) => {
   try {
-    const post = await Blog.findOne({ _id: req.params.id }).populate("user");
+    const post = await Blog.findById(req.params.id)
 
     if (!post) {
       const error = new Error("هیجی نیس");
       error.statusCode = 404;
       throw error;
     }
-
-    res.status(200).json({ post });
+    
+    res.status(200).json( post );
   } catch (err) {
     next(err);
   }
 };
 exports.getSingleuser = async (req, res, next) => {
   try {
-    const user = await User.findOne({ _id: req.params.id });
+    const user = await User.findById( req.params.id );
 
     if (!user) {
       const error = new Error("هیجی نیس");
@@ -165,6 +165,22 @@ exports.handleContactPage = async (req, res, next) => {
   }
 };
 
+exports.searchTour =async (req, res,next) => {
+  try {
+
+    const posts = await Blog.find({title: new RegExp(req.body.text)})
+
+    if (!posts) {
+      const error = new Error("هیجی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+    
+    res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
 exports.getCaptcha = (req, res) => {
   CAPTCHA_NUM = parseInt(Math.random() * 9000 + 1000);
   const p = new captchapng(80, 30, CAPTCHA_NUM);
