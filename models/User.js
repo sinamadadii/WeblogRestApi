@@ -75,7 +75,7 @@ const userSchema = new mongoose.Schema({
 
 
   },
-  joinedTours:{
+  city:{
     type:Array
   }
   
