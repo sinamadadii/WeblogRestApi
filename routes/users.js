@@ -12,7 +12,8 @@ router.post("/login", userController.handleLogin);
 router.put("/accept-tour", authenticated, userController.acceptTour);
 router.post("/edit-profile", authenticated, userController.editProfile);
 router.get("/profile", authenticated, userController.userProfile);
-router.post("/upload-profilephoto", authenticated, userController.uploadProfilePhoto);
+router.post("/uploadphoto", authenticated, userController.uploadProfilePhoto);
+router.delete("/deleteProfile/:name", authenticated, userController.deleteProfile);
 
 router.get("/isAuth", userController.isAuth);
 

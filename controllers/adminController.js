@@ -192,7 +192,10 @@ exports.requestedPosts = async (req, res, next) => {
 exports.createPost = async (req, res, next) => {
   const thumbnails = req.files ? Object.values(req.files) : [];
   const thumbnailsnames = [];
-  const permissions=Gallery.find({user:req.userId,type:'permissionphoto'})
+  const permissions = Gallery.find({
+    user: req.userId,
+    type: "permissionphoto",
+  });
   try {
     const numberOfpostsa = await Blog.find({
       isAccept: "accept",
@@ -232,12 +235,12 @@ exports.createPost = async (req, res, next) => {
         .catch((err) => console.log(err));
     });
 
-    await Blog.create({
+    const post = await Blog.create({
       ...req.body,
       user: req.userId,
       thumbnail: thumbnailsnames,
     });
-    res.status(200).json({ message: "حله" });
+    res.status(200).json({ message: "حله", post: post });
   } catch (err) {
     next(err);
   }
@@ -261,7 +264,7 @@ exports.createGallery = async (req, res, next) => {
       Gallery.create({
         user: req.userId,
         name: fileName,
-        type:'galleryphoto'
+        type: "galleryphoto",
       });
     });
 
@@ -292,7 +295,7 @@ exports.gallery = async (req, res, next) => {
   try {
     const gallery = await Gallery.find({
       user: req.userId,
-      type:'galleryphoto'
+      type: "galleryphoto",
     }).sort({
       createdAt: "desc",
     });
@@ -367,7 +370,7 @@ exports.addPermissions = async (req, res, next) => {
       Gallery.create({
         user: req.userId,
         name: fileName,
-        type:'permissionphoto'
+        type: "permissionphoto",
       });
     });
     user.save();
@@ -378,7 +381,10 @@ exports.addPermissions = async (req, res, next) => {
 };
 exports.permissions = async (req, res, next) => {
   try {
-    const auser = await Gallery.find({user:req.params.id,type:'permissionphoto'});
+    const auser = await Gallery.find({
+      user: req.params.id,
+      type: "permissionphoto",
+    });
     res.status(200).json(auser);
   } catch (err) {
     next(err);
@@ -439,7 +445,7 @@ exports.joineds = async (req, res, next) => {
     const user = await User.findById(req.userId);
     const { _id, name, email, profilePhoto } = user;
     const profile = { _id, name, email, profilePhoto };
-    const toursjoined =await Blog.find({ joinedUsers: { $in: [profile] } });
+    const toursjoined = await Blog.find({ joinedUsers: { $in: [profile] } });
     if (!user) {
       const error = new Error("چنین یوزری نیست");
       error.statusCode = 404;

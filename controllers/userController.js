@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
+const fs = require("fs");
 
 const { fileFilter } = require("../utils/multer");
 const sharp = require("sharp");
@@ -8,6 +9,7 @@ const appRoot = require("app-root-path");
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const { sendEmail } = require("../utils/mailer");
+const Gallery = require("../models/Gallery");
 
 exports.isAuth = (req, res, next) => {
   const authHeader = req.get("Authorization");
@@ -252,6 +254,9 @@ exports.editProfile = async (req, res, next) => {
 exports.userProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
+    const profilePhotos = await Gallery.find({ user: req.userId }).sort({
+      createdAt: "desc",
+    });
     if (!user) {
       const error = new Error("هیجی نیس");
       error.statusCode = 404;
@@ -264,7 +269,7 @@ exports.userProfile = async (req, res, next) => {
       phoneNumber: user.phoneNumber,
       createdAt: user.createdAt,
       type: user.type,
-      profilePhotos: user.profilePhotos,
+      profilePhotos: profilePhotos,
       description: user.description,
     });
   } catch (err) {
@@ -280,7 +285,12 @@ exports.uploadProfilePhoto = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-    await files.forEach((element) => {
+    if (!files) {
+      const error = new Error("فایلی نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    files.forEach((element) => {
       const fileName = `${shortId.generate()}_${element.name}`;
       const uploadPath = `${appRoot}/public/uploads/profilePhotos/${fileName}`;
       sharp(element.data)
@@ -297,5 +307,25 @@ exports.uploadProfilePhoto = async (req, res, next) => {
     res.status(200).json({ message: "حله" });
   } catch (error) {
     next(error);
+  }
+};
+exports.deleteProfile = async (req, res, next) => {
+  const photo = await Gallery.findOne({
+    user: req.userId,
+    name: req.params.name,
+  });
+  try {
+    await Gallery.findOneAndDelete({ user: req.userId, name: req.params.name });
+    const filePath = `${appRoot}/public/uploads/profilePhotos/${photo.name}`;
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        const error = new Error("خطای پاکسازی ");
+        error.statusCode = 400;
+        throw error;
+      }
+    });
+    res.status(200).json({ message: "حله" });
+  } catch (err) {
+    next();
   }
 };

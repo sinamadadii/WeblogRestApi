@@ -83,6 +83,8 @@ exports.getPopularCamps = async (req, res, next) => {
       obj.id = element._id;
       obj.photo = element.profilePhoto;
       obj.rate = element.rate;
+      obj.description = element.description;
+      obj.name = element.name;
 
       popCamps.push(obj);
     });
