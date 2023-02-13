@@ -133,7 +133,9 @@ exports.getSinglePost = async (req, res, next) => {
 exports.getSingleuser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
-
+    const profilePhotos = await Gallery.find({ user: req.params.id }).sort({
+      createdAt: "desc",
+    });
     if (!user) {
       const error = new Error("هیجی نیس");
       error.statusCode = 404;
@@ -142,7 +144,10 @@ exports.getSingleuser = async (req, res, next) => {
 
     res.status(200).json({
       name: user.name,
-      photo: user.profilePhoto,
+      profilePhotos: profilePhotos,
+      description:user.description,
+      rate:user.rate,
+      id:user._id
     });
   } catch (err) {
     next(err);

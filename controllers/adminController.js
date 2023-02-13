@@ -307,7 +307,11 @@ exports.gallery = async (req, res, next) => {
 exports.joinTour = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
-
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
     const { _id, name, email, profilePhoto } = user;
     const profile = { _id, name, email, profilePhoto };
     const post = await Blog.findById(req.body.postId);
