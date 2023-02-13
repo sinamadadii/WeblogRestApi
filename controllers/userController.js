@@ -99,9 +99,10 @@ exports.handleLogin = async (req, res, next) => {
 exports.createUser = async (req, res, next) => {
   try {
     await User.userValidation(req.body);
-    const { name, email, password, type } = req.body;
+    const { name, email, password ,type} = req.body;
     const user = await User.findOne({ email });
     let isAccept = "accept";
+    // let type = "admin"
 
     if (type == "tour") {
       isAccept = "waiting";
@@ -111,16 +112,16 @@ exports.createUser = async (req, res, next) => {
       error.statusCode = 422;
       throw error;
     } else {
-      await User.create({ name, email, password, type, isAccept });
+    await User.create({ name, email, password, type, isAccept });
 
-      //? Send Welcome Email
-      // sendEmail(
-      //   email,
-      //   name,
-      //   "خوش آمدی به وبلاگ ما",
-      //   "خیلی خوشحالیم که به جمع ما وبلاگرهای خفن ملحق شدی"
-      // );
-      res.status(201).json({ message: "عضوشد" });
+    //? Send Welcome Email
+    // sendEmail(
+    //   email,
+    //   name,
+    //   "خوش آمدی به وبلاگ ما",
+    //   "خیلی خوشحالیم که به جمع ما وبلاگرهای خفن ملحق شدی"
+    // );
+    res.status(201).json({ message: "عضوشد" });
     }
   } catch (err) {
     next(err);
@@ -230,7 +231,7 @@ exports.editProfile = async (req, res, next) => {
     res
       .status(200)
       .json({
-        message:'olala'
+        message: 'olala'
         // userId: user.id.toString(),
         // userEmail: user.email,
         // name: user.name,
@@ -254,15 +255,15 @@ exports.userProfile = async (req, res, next) => {
       throw error;
     }
     res.status(200).json({
-      id:user._id,
-      name:user.name,
-      email:user.email,
-      phoneNumber:user.phoneNumber,
-      createdAt:user.createdAt,
-      type:user.type,
-      profilePhotos:user.profilePhotos,
-      description:user.description,
-      
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      createdAt: user.createdAt,
+      type: user.type,
+      profilePhotos: user.profilePhotos,
+      description: user.description,
+
     })
   } catch (err) {
     next(err);
