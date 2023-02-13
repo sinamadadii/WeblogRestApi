@@ -192,6 +192,10 @@ exports.requestedPosts = async (req, res, next) => {
 exports.createPost = async (req, res, next) => {
   const thumbnails = req.files ? Object.values(req.files) : [];
   const thumbnailsnames = [];
+  const permissions = Gallery.find({
+    user: req.userId,
+    type: "permissionphoto",
+  });
   try {
     const numberOfpostsa = await Blog.find({
       isAccept: "accept",
@@ -202,7 +206,7 @@ exports.createPost = async (req, res, next) => {
       user: req.userId,
     }).countDocuments();
     const user = await User.findById(req.userId);
-    if (user.permissions.length == 0) {
+    if (permissions.length == 0) {
       const error = new Error("برای ایجادتوربایدقسمت مجوزهاتکمیل شود");
       error.statusCode = 404;
       throw error;
@@ -231,12 +235,12 @@ exports.createPost = async (req, res, next) => {
         .catch((err) => console.log(err));
     });
 
-    await Blog.create({
+    const post = await Blog.create({
       ...req.body,
       user: req.userId,
       thumbnail: thumbnailsnames,
     });
-    res.status(200).json({ message: "حله" });
+    res.status(200).json({ message: "حله", post: post });
   } catch (err) {
     next(err);
   }
@@ -252,7 +256,7 @@ exports.createGallery = async (req, res, next) => {
     }
     await files.forEach((element) => {
       const fileName = `${shortId.generate()}_${element.name}`;
-      const uploadPath = `${appRoot}/public/uploads/thumbnails/${fileName}`;
+      const uploadPath = `${appRoot}/public/uploads/gallery/${fileName}`;
       sharp(element.data)
         .jpeg({ quality: 60 })
         .toFile(uploadPath)
@@ -260,6 +264,7 @@ exports.createGallery = async (req, res, next) => {
       Gallery.create({
         user: req.userId,
         name: fileName,
+        type: "galleryphoto",
       });
     });
 
@@ -272,7 +277,7 @@ exports.createGallery = async (req, res, next) => {
 exports.deleteGallery = async (req, res, next) => {
   try {
     const gallery = await Gallery.findOneAndDelete(req.params.id);
-    const filePath = `${appRoot}/public/uploads/thumbnails/${gallery.name}`;
+    const filePath = `${appRoot}/public/uploads/gallery/${gallery.name}`;
     fs.unlink(filePath, (err) => {
       if (err) {
         const error = new Error("خطای پاکسازی ");
@@ -289,7 +294,8 @@ exports.deleteGallery = async (req, res, next) => {
 exports.gallery = async (req, res, next) => {
   try {
     const gallery = await Gallery.find({
-      user: req.params.id,
+      user: req.userId,
+      type: "galleryphoto",
     }).sort({
       createdAt: "desc",
     });
@@ -301,15 +307,18 @@ exports.gallery = async (req, res, next) => {
 exports.joinTour = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
+
     const { _id, name, email, profilePhoto } = user;
     const profile = { _id, name, email, profilePhoto };
     const post = await Blog.findById(req.body.postId);
+    const touruser = await User.findById(post.user);
+    touruser.money = (await touruser.money) + post.price;
 
     await post.joinedUsers.push(profile);
-    await user.joinedTours.push(post);
-
+    // await user.joinedTours.push(post);
+    touruser.save();
     post.save();
-    user.save();
+    // user.save();
     res.status(200).json({ message: "حله" });
   } catch (err) {
     next(err);
@@ -317,24 +326,26 @@ exports.joinTour = async (req, res, next) => {
 };
 exports.unJoinTour = async (req, res, next) => {
   try {
-    const user = await User.findById(req.userId);
+    // const user = await User.findById(req.userId);
     const post = await Blog.findById(req.body.postId);
     const joinedUsersTour = await post.joinedUsers;
-    const joinedToursUser = await user.joinedTours;
-    const tour = joinedToursUser.find(
-      (q) => q._id.toString() === req.body.postId
-    );
+    // const joinedToursUser = await user.joinedTours;
+    // const tour = joinedToursUser.find(
+    //   (q) => q._id.toString() === req.body.postId
+    // );
     const joineduser = joinedUsersTour.find(
       (q) => q._id.toString() === req.userId
     );
     const { _id, name, email, profilePhoto } = joineduser;
     const profile = { _id, name, email, profilePhoto };
+    const touruser = await User.findById(post.user);
+    touruser.money = (await touruser.money) - post.price;
 
-    await joinedToursUser.splice(tour, 1);
+    // await joinedToursUser.splice(tour, 1);
     await joinedUsersTour.splice(profile, 1);
-
+    touruser.save();
     post.save();
-    user.save();
+    // user.save();
     res.status(200).json({ message: "حله" });
   } catch (err) {
     next(err);
@@ -356,7 +367,11 @@ exports.addPermissions = async (req, res, next) => {
         .jpeg({ quality: 60 })
         .toFile(uploadPath)
         .catch((err) => console.log(err));
-      user.permissions.push(fileName);
+      Gallery.create({
+        user: req.userId,
+        name: fileName,
+        type: "permissionphoto",
+      });
     });
     user.save();
     res.status(200).json({ message: "حله" });
@@ -366,8 +381,11 @@ exports.addPermissions = async (req, res, next) => {
 };
 exports.permissions = async (req, res, next) => {
   try {
-    const auser = await User.findById(req.params.id);
-    res.status(200).json(auser.permissions);
+    const auser = await Gallery.find({
+      user: req.params.id,
+      type: "permissionphoto",
+    });
+    res.status(200).json(auser);
   } catch (err) {
     next(err);
   }
@@ -425,13 +443,16 @@ exports.saveds = async (req, res, next) => {
 exports.joineds = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
+    const { _id, name, email, profilePhoto } = user;
+    const profile = { _id, name, email, profilePhoto };
+    const toursjoined = await Blog.find({ joinedUsers: { $in: [profile] } });
     if (!user) {
       const error = new Error("چنین یوزری نیست");
       error.statusCode = 404;
       throw error;
     }
 
-    res.status(200).json(user.joinedTours);
+    res.status(200).json(toursjoined);
   } catch (err) {
     next(err);
   }

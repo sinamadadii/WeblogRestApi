@@ -13,6 +13,11 @@ const gallerySchmea = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  type:{
+    type:String,
+    enum: ["profilephoto", "galleryphoto","permissionphoto"],
+    required:true,
+  }
 });
 
 module.exports = mongoose.model("Gallery", gallerySchmea);

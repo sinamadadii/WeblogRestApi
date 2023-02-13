@@ -8,6 +8,8 @@ const router = new Router();
 //  @route  GET /
 router.get("/", blogController.getIndex);
 router.get("/getPopularCamps", blogController.getPopularCamps);
+router.get("/getPopularTours", blogController.getPopularTours);
+
 router.get("/getCampTours/:id", blogController.getCampTours);
 router.get("/getCampGallery/:id", blogController.getCampGallery);
 

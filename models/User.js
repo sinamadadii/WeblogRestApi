@@ -20,10 +20,9 @@ const userSchema = new mongoose.Schema({
     minlength: 4,
     maxlength: 255,
   },
-  phoneNumber:{
-    type:String,
-    default:""
-
+  phoneNumber: {
+    type: String,
+    default: "",
   },
   createdAt: {
     type: Date,
@@ -31,54 +30,49 @@ const userSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["tourist", "tour","admin"],
-    required:true,
+    enum: ["tourist", "tour", "admin"],
+    required: true,
   },
-  profilePhoto:{
-    type:String,
-    default:"defaultProfile.jpg"
-
+  profilePhoto: {
+    type: String,
+    default: "defaultProfile.jpg",
   },
-  profilePhotos:{
-    type:Array,
-    maxlength:12,
-    default:["defaultProfile.jpg"]
-
-    
+  profilePhotos: {
+    type: Array,
+    maxlength: 12,
+    default: ["defaultProfile.jpg"],
   },
-  description:{
-    type:String,
-    default:""
-
+  description: {
+    type: String,
+    default: "",
   },
-  rate:{
-    type:Number,
-    default:0,
+  rate: {
+    type: Number,
+    default: 0,
   },
-  tours:{
-    type:Array
+  tours: {
+    type: Array,
   },
-  isAccept:{
-    type:String,
-    default:'accept',
-    enum:['accept','waiting','reject']
+  isAccept: {
+    type: String,
+    default: "accept",
+    enum: ["accept", "waiting", "reject"],
   },
-  permissions:{
-    type:Array
+  permissions: {
+    type: Array,
   },
-  money:{
-    type:Number,
-    default:0
+  money: {
+    type: Number,
+    default: 0,
   },
-  saveds:{
-   type: Array,
-
-
+  saveds: {
+    type: Array,
   },
-  joinedTours:{
-    type:Array
-  }
-  
+  city: {
+    type: String,
+    default: "Tehran",
+    enum: ["Tabriz", "Tehran", "Alborz"],
+  },
 });
 
 userSchema.statics.userValidation = function (body) {
