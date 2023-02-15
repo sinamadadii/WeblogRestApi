@@ -51,7 +51,24 @@ exports.getCampGallery = async (req, res, next) => {
   try {
     const posts = await Gallery.find({
       user: req.params.id,
+      type: "permissionphoto",
     }).sort({
+      createdAt: "desc",
+    });
+    if (!posts) {
+      const error = new Error("هیچی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.getRelatedTours = async (req, res, next) => {
+  try {
+    const posts = await Blog.find({type:req.body.typep,_id:{$ne:req.body.id}}).sort({
       createdAt: "desc",
     });
     if (!posts) {
@@ -79,7 +96,7 @@ exports.getPopularCamps = async (req, res, next) => {
     }
     const popCamps = [];
     camps.forEach((element) => {
-      const obj = { id: "", photo: "",rate:0 };
+      const obj = { id: "", photo: "", rate: 0 };
       obj.id = element._id;
       obj.photo = element.profilePhoto;
       obj.rate = element.rate;
@@ -123,9 +140,37 @@ exports.getSinglePost = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
+    const obj = {
+      _id: post._id,
+      date: post.date,
+      body: post.body,
+      capacity: post.capacity,
+      createdAt: post.createdAt,
+      durationTime: post.durationTime,
+      isAccept: post.isAccept,
+      title: post.title,
+      type: post.type,
+      thumbnail:post.thumbnail,
+      joinedUsers:post.joinedUsers,
+      price:post.price,
+    };
     res
       .status(200)
-      .json({ post: post, user: { id: user._id, name: user.name } });
+      .json({ post: obj, user: { id: user._id, name: user.name } });
+  } catch (err) {
+    next(err);
+  }
+};
+exports.getpostjoiners = async (req, res, next) => {
+  try {
+    const post = await Blog.findById(req.params.id);
+
+    if (!post) {
+      const error = new Error("هیجی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+    res.status(200).json(post.joinedUsers);
   } catch (err) {
     next(err);
   }
@@ -133,7 +178,10 @@ exports.getSinglePost = async (req, res, next) => {
 exports.getSingleuser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
-    const profilePhotos = await Gallery.find({ user: req.params.id }).sort({
+    const profilePhotos = await Gallery.find({
+      user: req.params.id,
+      type: "profilephoto",
+    }).sort({
       createdAt: "desc",
     });
     if (!user) {
@@ -145,9 +193,9 @@ exports.getSingleuser = async (req, res, next) => {
     res.status(200).json({
       name: user.name,
       profilePhotos: profilePhotos,
-      description:user.description,
-      rate:user.rate,
-      id:user._id
+      description: user.description,
+      rate: user.rate,
+      id: user._id,
     });
   } catch (err) {
     next(err);

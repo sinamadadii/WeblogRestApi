@@ -295,7 +295,7 @@ exports.gallery = async (req, res, next) => {
   try {
     const gallery = await Gallery.find({
       user: req.userId,
-      type: "galleryphoto",
+      type: "permissionphoto",
     }).sort({
       createdAt: "desc",
     });
@@ -312,8 +312,14 @@ exports.joinTour = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-    const { _id, name, email, profilePhoto } = user;
-    const profile = { _id, name, email, profilePhoto };
+    const profilephotoss = await Gallery.find({
+      user: req.userId,
+      type: "profilephoto",
+    }).sort({
+      createdAt: "desc",
+    });
+    const { _id, name, email } = user;
+    const profile = { _id, name, email, profilephotoss };
     const post = await Blog.findById(req.body.postId);
     const touruser = await User.findById(post.user);
     touruser.money = (await touruser.money) + post.price;
@@ -330,26 +336,18 @@ exports.joinTour = async (req, res, next) => {
 };
 exports.unJoinTour = async (req, res, next) => {
   try {
-    // const user = await User.findById(req.userId);
     const post = await Blog.findById(req.body.postId);
     const joinedUsersTour = await post.joinedUsers;
-    // const joinedToursUser = await user.joinedTours;
-    // const tour = joinedToursUser.find(
-    //   (q) => q._id.toString() === req.body.postId
-    // );
-    const joineduser = joinedUsersTour.find(
+
+    const index = joinedUsersTour.findIndex(
       (q) => q._id.toString() === req.userId
     );
-    const { _id, name, email, profilePhoto } = joineduser;
-    const profile = { _id, name, email, profilePhoto };
     const touruser = await User.findById(post.user);
     touruser.money = (await touruser.money) - post.price;
 
-    // await joinedToursUser.splice(tour, 1);
-    await joinedUsersTour.splice(profile, 1);
+    await joinedUsersTour.splice(index, 1);
     touruser.save();
     post.save();
-    // user.save();
     res.status(200).json({ message: "حله" });
   } catch (err) {
     next(err);
@@ -419,10 +417,13 @@ exports.unSaved = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-    const posts = await user.saveds;
-    const post = posts.find((q) => q._id.toString() === req.body.postId);
 
-    await posts.splice(post, 1);
+    const savedposts = await user.saveds;
+    const index = await savedposts.findIndex(
+      (obj) => req.body.postId === obj._id.toString()
+    );
+
+    await savedposts.splice(index, 1);
     user.save();
     res.status(200).json({ message: "حله" });
   } catch (error) {
@@ -448,7 +449,13 @@ exports.joineds = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
     const { _id, name, email, profilePhoto } = user;
-    const profile = { _id, name, email, profilePhoto };
+    const profilephotoss = await Gallery.find({
+      user: req.userId,
+      type: "profilephoto",
+    }).sort({
+      createdAt: "desc",
+    });
+    const profile = { _id, name, email, profilephotoss };
     const toursjoined = await Blog.find({ joinedUsers: { $in: [profile] } });
     if (!user) {
       const error = new Error("چنین یوزری نیست");

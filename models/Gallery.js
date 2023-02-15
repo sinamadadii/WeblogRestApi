@@ -15,7 +15,7 @@ const gallerySchmea = new mongoose.Schema({
   },
   type:{
     type:String,
-    enum: ["profilephoto", "galleryphoto","permissionphoto"],
+    enum: ["profilephoto","permissionphoto"],
     required:true,
   }
 });

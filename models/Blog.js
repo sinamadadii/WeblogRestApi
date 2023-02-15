@@ -35,8 +35,10 @@ const blogSchmea = new mongoose.Schema({
         type:Date
     },
     durationTime:{
-        type:String,
-        enum:["1day","2days","3days","4days","5days","6days","1week","10days","2week","20days","1month"]
+        type:Number,
+        required:true,
+        default:0
+
     },
     joinedUsers:{
         type:Array
