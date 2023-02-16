@@ -79,6 +79,7 @@ exports.handleLogin = async (req, res, next) => {
           isAccept: user.isAccept,
           phoneNumber: user.phoneNumber,
           money: user.money,
+          city: user.city,
         });
       }
       if (user.type == "tourist") {
@@ -290,10 +291,10 @@ exports.uploadProfilePhoto = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-    files.forEach((element) => {
-      const fileName = `${shortId.generate()}_${element.name}`;
+    files.forEach(async (element) => {
+      const fileName = `${shortId.generate()}_${await element.name}`;
       const uploadPath = `${appRoot}/public/uploads/profilePhotos/${fileName}`;
-      sharp(element.data)
+      sharp(await element.data)
         .jpeg({ quality: 60 })
         .toFile(uploadPath)
         .catch((err) => console.log(err));

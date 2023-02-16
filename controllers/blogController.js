@@ -4,16 +4,20 @@ const Blog = require("../models/Blog");
 const { sendEmail } = require("../utils/mailer");
 const User = require("../models/User");
 const Gallery = require("../models/Gallery");
+const jwt = require("jsonwebtoken");
 
 let CAPTCHA_NUM;
 
 exports.getIndex = async (req, res, next) => {
   try {
-    const numberOfPosts = await Blog.find({
-      isAccept: "accept",
-    }).countDocuments();
+    // const numberOfPosts = await Blog.find({
+    //   isAccept: "accept",
+    // }).countDocuments();
 
-    const posts = await Blog.find({ isAccept: "accept" }).sort({
+    const posts = await Blog.find({
+      isAccept: "accept",
+      city: req.params.city,
+    }).sort({
       createdAt: "desc",
     });
     if (!posts) {
@@ -22,7 +26,7 @@ exports.getIndex = async (req, res, next) => {
       throw error;
     }
 
-    res.status(200).json({ posts, total: numberOfPosts });
+    res.status(200).json({ posts });
   } catch (err) {
     next(err);
   }
@@ -68,7 +72,10 @@ exports.getCampGallery = async (req, res, next) => {
 };
 exports.getRelatedTours = async (req, res, next) => {
   try {
-    const posts = await Blog.find({type:req.body.typep,_id:{$ne:req.body.id}}).sort({
+    const posts = await Blog.find({
+      type: req.body.typep,
+      _id: { $ne: req.body.id },
+    }).sort({
       createdAt: "desc",
     });
     if (!posts) {
@@ -84,7 +91,7 @@ exports.getRelatedTours = async (req, res, next) => {
 };
 exports.getPopularCamps = async (req, res, next) => {
   try {
-    const camps = await User.find({ type: "tour" })
+    const camps = await User.find({ type: "tour", city: req.params.city })
       .sort({
         rate: -1,
       })
@@ -114,7 +121,7 @@ exports.getPopularCamps = async (req, res, next) => {
 
 exports.getPopularTours = async (req, res, next) => {
   try {
-    const tours = await Blog.find({ isAccept: "accept" })
+    const tours = await Blog.find({ isAccept: "accept", city: req.params.city })
       .sort({
         capacity: 1,
       })
@@ -123,6 +130,25 @@ exports.getPopularTours = async (req, res, next) => {
       const error = new Error("هیچی نیس");
       error.statusCode = 404;
       throw error;
+    }
+
+    if (req.params.token) {
+      const token = req.params.token;
+
+      const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decodedToken.user.userId);
+      const saveds = await user.saveds;
+
+      await tours.forEach(async (tour) => {
+        await saveds.forEach(async (element) => {
+          if (element._id.toString() === (await tour._id.toString())) {
+            await Object.assign(tour, { isSaved: true });
+          } else {
+            await Object.assign(tour, { isSaved: false });
+          }
+        });
+      });
+      return res.status(200).json(tours);
     }
 
     res.status(200).json(tours);
@@ -150,9 +176,9 @@ exports.getSinglePost = async (req, res, next) => {
       isAccept: post.isAccept,
       title: post.title,
       type: post.type,
-      thumbnail:post.thumbnail,
-      joinedUsers:post.joinedUsers,
-      price:post.price,
+      thumbnail: post.thumbnail,
+      joinedUsers: post.joinedUsers,
+      price: post.price,
     };
     res
       .status(200)

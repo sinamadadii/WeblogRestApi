@@ -239,6 +239,7 @@ exports.createPost = async (req, res, next) => {
       ...req.body,
       user: req.userId,
       thumbnail: thumbnailsnames,
+      city:user.city
     });
     res.status(200).json({ message: "حله", post: post });
   } catch (err) {
@@ -273,7 +274,21 @@ exports.createGallery = async (req, res, next) => {
     next(error);
   }
 };
-
+exports.setCampCity = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    user.city = req.body.city;
+    user.save();
+    res.status(200).json({ message: "حله" });
+  } catch (err) {
+    next();
+  }
+};
 exports.deleteGallery = async (req, res, next) => {
   try {
     const gallery = await Gallery.findOneAndDelete(req.params.id);

@@ -68,11 +68,11 @@ const userSchema = new mongoose.Schema({
   saveds: {
     type: Array,
   },
-  // city: {
-  //   type: String,
-  //   default: "Tehran",
-  //   enum: ["Tabriz", "Tehran", "Alborz"],
-  // },
+  city: {
+    type: String,
+    default: "Tehran",
+    enum: ["Tabriz", "Tehran", "Alborz"],
+  },
 });
 
 userSchema.statics.userValidation = function (body) {

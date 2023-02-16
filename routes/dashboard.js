@@ -24,6 +24,7 @@ router.get("/joineds",authenticated, adminController.joineds);
 
 router.post("/is-saved",authenticated, adminController.isSaved);
 router.post("/is-joined",authenticated, adminController.isJoined);
+router.post("/setcampCity",authenticated, adminController.setCampCity);
 
 router.put("/delte-galley/:name",authenticated, adminController.deleteGallery);
 

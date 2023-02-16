@@ -6,9 +6,9 @@ const router = new Router();
 
 //  @desc   Weblog Index Page
 //  @route  GET /
-router.get("/", blogController.getIndex);
-router.get("/getPopularCamps", blogController.getPopularCamps);
-router.get("/getPopularTours", blogController.getPopularTours);
+router.get("/getall/:city", blogController.getIndex);
+router.get("/getPopularCamps/:city", blogController.getPopularCamps);
+router.get("/getPopularTours/:city", blogController.getPopularTours);
 
 router.get("/getCampTours/:id", blogController.getCampTours);
 router.get("/getCampGallery/:id", blogController.getCampGallery);
