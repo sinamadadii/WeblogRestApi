@@ -12,6 +12,7 @@ router.get("/getPopularTours/:city", blogController.getPopularTours);
 
 router.get("/getCampTours/:id", blogController.getCampTours);
 router.get("/getCampGallery/:id", blogController.getCampGallery);
+router.get("/getcampleaders/:id", blogController.getCampLeaders);
 
 //  @desc   Weblog Post Page
 //  @route  GET /post/:id

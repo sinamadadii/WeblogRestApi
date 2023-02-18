@@ -68,6 +68,9 @@ const userSchema = new mongoose.Schema({
   saveds: {
     type: Array,
   },
+  leaders: {
+    type: Array,
+  },
   city: {
     type: String,
     default: "Tehran",

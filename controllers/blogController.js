@@ -51,6 +51,22 @@ exports.getCampTours = async (req, res, next) => {
     next(err);
   }
 };
+exports.getCampLeaders = async (req, res, next) => {
+  try {
+    const user= await User.findById(req.params.id);
+    if (!user) {
+      const error = new Error("هیچی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+    const leaders=await user.leaders
+
+
+    res.status(200).json(leaders);
+  } catch (err) {
+    next(err);
+  }
+};
 exports.getCampGallery = async (req, res, next) => {
   try {
     const posts = await Gallery.find({
