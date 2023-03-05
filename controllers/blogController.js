@@ -10,19 +10,16 @@ let CAPTCHA_NUM;
 
 exports.getIndex = async (req, res, next) => {
   try {
-    // const numberOfPosts = await Blog.find({
-    //   isAccept: "accept",
-    // }).countDocuments();
-
+    
     const posts = await Blog.find({
       isAccept: "accept",
       city: req.params.city,
     }).sort({
       createdAt: "desc",
     });
-    if (!posts) {
+    if (posts.length===0) {
       const error = new Error("هیچی نیس");
-      error.statusCode = 404;
+      error.statusCode = 408;
       throw error;
     }
 
@@ -112,9 +109,9 @@ exports.getPopularCamps = async (req, res, next) => {
         rate: -1,
       })
       .limit(5);
-    if (!camps) {
+    if (camps.length===0) {
       const error = new Error("هیچی نیس");
-      error.statusCode = 404;
+      error.statusCode = 408;
       throw error;
     }
     const popCamps = [];
@@ -142,30 +139,13 @@ exports.getPopularTours = async (req, res, next) => {
         capacity: 1,
       })
       .limit(5);
-    if (!tours) {
+    if (tours.length===0) {
       const error = new Error("هیچی نیس");
-      error.statusCode = 404;
+      error.statusCode = 408;
       throw error;
     }
 
-    if (req.params.token) {
-      const token = req.params.token;
-
-      const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decodedToken.user.userId);
-      const saveds = await user.saveds;
-
-      await tours.forEach(async (tour) => {
-        await saveds.forEach(async (element) => {
-          if (element._id.toString() === (await tour._id.toString())) {
-            await Object.assign(tour, { isSaved: true });
-          } else {
-            await Object.assign(tour, { isSaved: false });
-          }
-        });
-      });
-      return res.status(200).json(tours);
-    }
+    
 
     res.status(200).json(tours);
   } catch (err) {

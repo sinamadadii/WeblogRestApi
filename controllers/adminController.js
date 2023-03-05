@@ -239,7 +239,7 @@ exports.createPost = async (req, res, next) => {
       ...req.body,
       user: req.userId,
       thumbnail: thumbnailsnames,
-      city:user.city
+      city: user.city,
     });
     res.status(200).json({ message: "حله", post: post });
   } catch (err) {
@@ -327,6 +327,7 @@ exports.joinTour = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
+
     const profilephotoss = await Gallery.find({
       user: req.userId,
       type: "profilephoto",
@@ -399,7 +400,7 @@ exports.addPermissions = async (req, res, next) => {
 exports.permissions = async (req, res, next) => {
   try {
     const auser = await Gallery.find({
-      user: req.params.id,
+      user: req.userId,
       type: "permissionphoto",
     });
     res.status(200).json(auser);
@@ -518,5 +519,126 @@ exports.isJoined = async (req, res, next) => {
     res.status(200).json(uuu);
   } catch (err) {
     next(err);
+  }
+};
+exports.searchuser = async (req, res, next) => {
+  try {
+    const regex = new RegExp(req.params.text);
+    const users = await User.find({
+      username: { $regex: regex },
+      type: "tourist",
+    });
+    const gallery = await Gallery.find({
+      type: "profilephoto",
+    }).sort({
+      createdAt: "desc",
+    });
+    const users2 = [];
+    await users.forEach(async (element) => {
+      const obj = {
+        id: "",
+        profilePhotos: [],
+        email: "",
+        name: "",
+        username: "",
+      };
+      const arr = [];
+
+      await gallery.forEach((param) => {
+        if (param.user.toString() === element._id.toString()) {
+          arr.push(param);
+        }
+      });
+      obj.id = element._id;
+      obj.profilePhotos = arr;
+      obj.email = element.email;
+      obj.name = element.name;
+      obj.username = element.username;
+
+      users2.push(obj);
+    });
+    if (users2.length === 0) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 408;
+      throw error;
+    }
+    res.status(200).json(users2);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.addleaders = async (req, res, next) => {
+  try {
+    const leader = await User.findById(req.body.id);
+    if (!leader) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    const leaders = user.leaders;
+    leaders.forEach((element) => {
+      if (element._id.toString() === leader._id.toString()) {
+        const error = new Error("شماقبلااین کاربررواضافه کردید");
+        error.statusCode = 409;
+        throw error;
+      }
+    });
+
+    const profilephotoss = await Gallery.find({
+      user: req.body.id,
+      type: "profilephoto",
+    }).sort({
+      createdAt: "desc",
+    });
+    const { _id, name, email, username } = leader;
+    const profile = { _id, name, email, username, profilephotoss };
+
+    await user.leaders.push(profile);
+    user.save();
+    res.status(200).json({ message: "حله" });
+  } catch (err) {
+    next(err);
+  }
+};
+exports.getLeaders = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("هیچی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+    const leaders = await user.leaders;
+
+    res.status(200).json(leaders);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.deleteleader = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const leaders = await user.leaders;
+    const index = await leaders.findIndex(
+      (obj) => req.body.id === obj._id.toString()
+    );
+
+    await leaders.splice(index, 1);
+    user.save();
+    res.status(200).json({ message: "حله" });
+  } catch (error) {
+    next(error);
   }
 };

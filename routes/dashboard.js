@@ -8,16 +8,20 @@ router.get("/getMyPosts/:id",authenticated, adminController.getMyPosts);
 router.get("/requestedPosts",authenticated, adminController.requestedPosts);
 router.get("/requestedTours",authenticated, adminController.requestedTours);
 router.put("/add-permissions",authenticated, adminController.addPermissions);
-router.get("/get-permissions/:id", authenticated,adminController.permissions);
+router.get("/get-permissions", authenticated,adminController.permissions);
 
 router.get("/get-gallery/:id", authenticated,adminController.gallery);
 router.get("/getsinglePost/:id",authenticated, adminController.getSinglePost);
+router.get("/getleaders",authenticated, adminController.getLeaders);
+router.get("/getusersearch/:text",authenticated, adminController.searchuser);
 router.post("/add-gallery",authenticated, adminController.createGallery);
 router.put("/join-tour",authenticated, adminController.joinTour);
 router.put("/unjoin-tour",authenticated, adminController.unJoinTour);
 
 router.put("/save-tour",authenticated, adminController.addSaveds);
+router.put("/add-leader",authenticated, adminController.addleaders);
 router.put("/unsave-tour",authenticated, adminController.unSaved);
+router.put("/delete-leader",authenticated, adminController.deleteleader);
 
 router.get("/saveds",authenticated, adminController.saveds);
 router.get("/joineds",authenticated, adminController.joineds);

@@ -26,7 +26,6 @@ exports.isAuth = (req, res, next) => {
       error.statusCode = 401;
       throw error;
     }
-    // req.userId=decodedToken.user.userId
     res.status(200).json(true);
   } catch (error) {
     next(error);
@@ -43,7 +42,9 @@ exports.handleLogin = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-
+    const profilePhotos = await Gallery.find({ user: user._id,type:'profilephoto' }).sort({
+      createdAt: "desc",
+    });
     const isEqual = await bcrypt.compare(password, user.password);
     if (isEqual) {
       const token = jwt.sign(
@@ -71,17 +72,9 @@ exports.handleLogin = async (req, res, next) => {
       if (user.type == "tour") {
         res.status(206).json({
           token,
-          userId: user._id.toString(),
-          userEmail: user.email,
-          name: user.name,
-          type: "tour",
-          profilePhoto: user.profilePhoto,
-          description: user.description,
-          rate: user.rate,
-          isAccept: user.isAccept,
-          phoneNumber: user.phoneNumber,
-          money: user.money,
+          profilePhotos,
           city: user.city,
+          isAccept: user.isAccept,
         });
       }
       if (user.type == "tourist") {
@@ -110,7 +103,7 @@ exports.handleLogin = async (req, res, next) => {
 exports.createUser = async (req, res, next) => {
   try {
     await User.userValidation(req.body);
-    const { name, email, password, type } = req.body;
+    const { name, email, password, type, city } = req.body;
     const user = await User.findOne({ email });
     let isAccept = "accept";
 
@@ -122,7 +115,7 @@ exports.createUser = async (req, res, next) => {
       error.statusCode = 422;
       throw error;
     } else {
-      await User.create({ name, email, password, type, isAccept });
+      await User.create({ name, email, password, type, isAccept, city });
 
       //? Send Welcome Email
       // sendEmail(
@@ -169,10 +162,10 @@ exports.handleForgetPassword = async (req, res, next) => {
   }
 };
 exports.handleForgetPasswordResieved = async (req, res, next) => {
-  const { id,rnumb } = await req.body;
-  
+  const { id, rnumb } = await req.body;
+
   try {
-    const user = await User.findById(id)
+    const user = await User.findById(id);
 
     const token = jwt.sign(
       {
@@ -193,12 +186,12 @@ exports.handleForgetPasswordResieved = async (req, res, next) => {
       throw error;
     }
 
-    if (Number(rnumb) !==user.rnumb) {
+    if (Number(rnumb) !== user.rnumb) {
       const error = new Error("کدواردشده اشتباه است");
       error.statusCode = 403;
       throw error;
     }
-    
+
     res.status(200).json({ token });
   } catch (error) {
     next(error);
@@ -308,8 +301,19 @@ exports.editProfile = async (req, res, next) => {
       throw error;
     }
     const { username, name, description, email, phoneNumber } = req.body;
-    const usernam = await User.findOne({ username: username });
 
+    const usernam = null;
+    if (user.type === "tourist") {
+      usernam = await User.findOne({ username: username });
+    }
+    const usernamemail = await User.findOne({ email: email });
+    if (usernamemail) {
+      if (usernamemail._id.toString() !== req.userId) {
+        const error = new Error("چنین  ایمیلی موجود است");
+        error.statusCode = 406;
+        throw error;
+      }
+    }
     if (usernam) {
       if (usernam._id.toString() !== req.userId) {
         const error = new Error("چنین نام کاربری موجود است");
@@ -335,7 +339,7 @@ exports.editProfile = async (req, res, next) => {
 exports.userProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
-    const profilePhotos = await Gallery.find({ user: req.userId }).sort({
+    const profilePhotos = await Gallery.find({ user: req.userId,type:'profilephoto' }).sort({
       createdAt: "desc",
     });
     if (!user) {
@@ -353,6 +357,9 @@ exports.userProfile = async (req, res, next) => {
       username: user.username,
       profilePhotos: profilePhotos,
       description: user.description,
+      city: user.city,
+      money: user.money,
+      isAccept: user.isAccept,
     });
   } catch (err) {
     next(err);

@@ -58,6 +58,11 @@ const blogSchmea = new mongoose.Schema({
     default: "Tehran",
     enum: ["Tabriz", "Tehran", "Alborz"],
   },
+  status: {
+    type: String,
+    default: "Recruiting",
+    enum: ["Recruiting", "closed"],
+  },
 });
 
 blogSchmea.index({ title: "text" });
