@@ -17,6 +17,7 @@ router.get("/getusersearch/:text",authenticated, adminController.searchuser);
 router.post("/add-gallery",authenticated, adminController.createGallery);
 router.put("/join-tour",authenticated, adminController.joinTour);
 router.put("/unjoin-tour",authenticated, adminController.unJoinTour);
+router.put("/delete-thumb",authenticated, adminController.deletethumbnail);
 
 router.put("/save-tour",authenticated, adminController.addSaveds);
 router.put("/add-leader",authenticated, adminController.addleaders);

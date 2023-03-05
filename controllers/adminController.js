@@ -41,9 +41,9 @@ exports.getSinglePost = async (req, res, next) => {
 
 exports.editPost = async (req, res, next) => {
   const thumbnails = req.files ? Object.values(req.files) : [];
-  const thumbnailsnames = [];
 
   const post = await Blog.findOne({ _id: req.params.id });
+  const thumbnailsnames = post.thumbnail;
 
   try {
     if (!post) {
@@ -69,14 +69,17 @@ exports.editPost = async (req, res, next) => {
         .catch((err) => console.log(err));
     });
 
-    const { title, isAccept, body, date, durationTime, capacity } = req.body;
+    const { title, isAccept, body, date, durationTime, capacity ,type,price} = req.body;
     post.title = title;
-    post.isAccept = isAccept;
+    post.isAccept = "waiting";
     post.body = body;
+    post.type = type;
+    post.price = price;
     post.date = date;
     post.durationTime = durationTime;
     post.capacity = capacity;
-    (post.thumbnail = thumbnailsnames), await post.save();
+    post.thumbnail = thumbnailsnames;
+    await post.save();
     res.status(200).json({ message: "حله" });
   } catch (err) {
     next(err);
@@ -85,7 +88,7 @@ exports.editPost = async (req, res, next) => {
 
 exports.deletePost = async (req, res, next) => {
   try {
-    await Blog.findByIdAndDelete(req.params.id);
+   const post= await Blog.findByIdAndDelete(req.params.id);
     post.thumbnail.forEach((item) => {
       const filePath = `${appRoot}/public/uploads/thumbnails/${item}`;
       fs.unlink(filePath, (err) => {
@@ -185,6 +188,33 @@ exports.requestedPosts = async (req, res, next) => {
     }
 
     res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.deletethumbnail = async (req, res, next) => {
+  try {
+    const post = await Blog.findById(req.body.id);
+    if (req.userId.toString() !== post.user.toString()) {
+      const error = new Error("شمادسترسی به این عمل راندارید ");
+      error.statusCode = 403;
+      throw error;
+    }
+    const thumbnails = await post.thumbnail;
+    const index = thumbnails.findIndex((q) => q === req.body.name);
+    await thumbnails.splice(index, 1);
+    post.save();
+
+    const filePath = `${appRoot}/public/uploads/thumbnails/${req.body.name}`;
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        const error = new Error("خطای پاکسازی ");
+        error.statusCode = 400;
+        throw error;
+      } else {
+        res.status(200).json({ message: "حله" });
+      }
+    });
   } catch (err) {
     next(err);
   }
