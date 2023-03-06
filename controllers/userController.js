@@ -63,9 +63,6 @@ exports.handleLogin = async (req, res, next) => {
       if (user.type == "admin") {
         res.status(200).json({
           token,
-          userId: user._id.toString(),
-          userEmail: user.email,
-          name: user.name,
           type: "admin",
         });
       }
@@ -302,7 +299,7 @@ exports.editProfile = async (req, res, next) => {
     }
     const { username, name, description, email, phoneNumber } = req.body;
 
-    const usernam = null;
+    let usernam = null;
     if (user.type === "tourist") {
       usernam = await User.findOne({ username: username });
     }
@@ -323,7 +320,7 @@ exports.editProfile = async (req, res, next) => {
     }
 
     user.name = name;
-    user.username = username;
+    user.username = username?.toLowerCase();
     user.description = description;
     user.email = email;
     user.phoneNumber = phoneNumber;

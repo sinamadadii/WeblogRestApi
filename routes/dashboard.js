@@ -4,7 +4,7 @@ const { authenticated } = require("../middlewares/auth");
 const adminController = require("../controllers/adminController");
 
 const router = new Router();
-router.get("/getMyPosts/:id",authenticated, adminController.getMyPosts);
+router.get("/getMyPosts",authenticated, adminController.getMyPosts);
 router.get("/requestedPosts",authenticated, adminController.requestedPosts);
 router.get("/requestedTours",authenticated, adminController.requestedTours);
 router.put("/add-permissions",authenticated, adminController.addPermissions);

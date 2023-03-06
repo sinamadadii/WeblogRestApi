@@ -69,7 +69,8 @@ exports.editPost = async (req, res, next) => {
         .catch((err) => console.log(err));
     });
 
-    const { title, isAccept, body, date, durationTime, capacity ,type,price} = req.body;
+    const { title, isAccept, body, date, durationTime, capacity, type, price } =
+      req.body;
     post.title = title;
     post.isAccept = "waiting";
     post.body = body;
@@ -88,7 +89,7 @@ exports.editPost = async (req, res, next) => {
 
 exports.deletePost = async (req, res, next) => {
   try {
-   const post= await Blog.findByIdAndDelete(req.params.id);
+    const post = await Blog.findByIdAndDelete(req.params.id);
     post.thumbnail.forEach((item) => {
       const filePath = `${appRoot}/public/uploads/thumbnails/${item}`;
       fs.unlink(filePath, (err) => {
@@ -140,16 +141,17 @@ exports.uploadImage = (req, res, next) => {
 exports.acceptPost = async (req, res, next) => {
   try {
     const post = await Blog.findById(req.body.id);
+    const admin = await User.findById(req.userId);
     if (!post) {
       const error = new Error("هیجی نیس");
       error.statusCode = 404;
       throw error;
     }
-    // if (user.role !== process.env.ADMINROLE) {
-    //   const error = new Error("شمامجوزویرایش اینو ندارید ");
-    //   error.statusCode = 401;
-    //   throw error;
-    // }
+    if (admin.type !== "admin") {
+      const error = new Error("شمامجوزندارید");
+      error.statusCode = 401;
+      throw error;
+    }
     post.isAccept = req.body.data.toString();
     post.save();
     res.status(200).json({ message: "حله" });
@@ -558,11 +560,17 @@ exports.searchuser = async (req, res, next) => {
       username: { $regex: regex },
       type: "tourist",
     });
+    const usertour = await User.findById(req.userId);
     const gallery = await Gallery.find({
       type: "profilephoto",
     }).sort({
       createdAt: "desc",
     });
+    if (usertour.isAccept !== "accept") {
+      const error = new Error("مجوزهای شماهنوز تایید نشده است");
+      error.statusCode = 405;
+      throw error;
+    }
     const users2 = [];
     await users.forEach(async (element) => {
       const obj = {
@@ -644,7 +652,7 @@ exports.getLeaders = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-    const leaders = await user.leaders;
+    let leaders = await user.leaders;
 
     res.status(200).json(leaders);
   } catch (err) {

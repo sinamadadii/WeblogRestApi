@@ -10,14 +10,13 @@ let CAPTCHA_NUM;
 
 exports.getIndex = async (req, res, next) => {
   try {
-    
     const posts = await Blog.find({
       isAccept: "accept",
       city: req.params.city,
     }).sort({
       createdAt: "desc",
     });
-    if (posts.length===0) {
+    if (posts.length === 0) {
       const error = new Error("هیچی نیس");
       error.statusCode = 408;
       throw error;
@@ -50,14 +49,13 @@ exports.getCampTours = async (req, res, next) => {
 };
 exports.getCampLeaders = async (req, res, next) => {
   try {
-    const user= await User.findById(req.params.id);
+    const user = await User.findById(req.params.id);
     if (!user) {
       const error = new Error("هیچی نیس");
       error.statusCode = 404;
       throw error;
     }
-    const leaders=await user.leaders
-
+    const leaders = await user.leaders;
 
     res.status(200).json(leaders);
   } catch (err) {
@@ -109,23 +107,42 @@ exports.getPopularCamps = async (req, res, next) => {
         rate: -1,
       })
       .limit(5);
-    if (camps.length===0) {
+
+    const profilePhotos = await Gallery.find({
+      type: "profilephoto",
+    }).sort({
+      createdAt: "desc",
+    });
+    const popCamps = [];
+    await camps.forEach(async (element) => {
+      const obj = {
+        id: "",
+        rate: 0,
+        profilePhotos: [],
+        description: "",
+        name: "",
+      };
+      const arr = [];
+
+      await profilePhotos.forEach((param) => {
+        if (param.user.toString() === element._id.toString()) {
+          arr.push(param);
+        }
+      });
+      obj.id = element._id;
+      obj.profilePhotos = arr;
+      obj.rate = element.rate;
+      obj.description = element.description;
+      obj.name = element.name;
+      obj.leaders = element.leaders;
+
+      popCamps.push(obj);
+    });
+    if (popCamps.length === 0) {
       const error = new Error("هیچی نیس");
       error.statusCode = 408;
       throw error;
     }
-    const popCamps = [];
-    camps.forEach((element) => {
-      const obj = { id: "", photo: "", rate: 0 };
-      obj.id = element._id;
-      obj.photo = element.profilePhoto;
-      obj.rate = element.rate;
-      obj.description = element.description;
-      obj.name = element.name;
-
-      popCamps.push(obj);
-    });
-
     res.status(200).json(popCamps);
   } catch (err) {
     next(err);
@@ -139,13 +156,11 @@ exports.getPopularTours = async (req, res, next) => {
         capacity: 1,
       })
       .limit(5);
-    if (tours.length===0) {
+    if (tours.length === 0) {
       const error = new Error("هیچی نیس");
       error.statusCode = 408;
       throw error;
     }
-
-    
 
     res.status(200).json(tours);
   } catch (err) {
