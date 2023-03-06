@@ -359,6 +359,13 @@ exports.joinTour = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
+    if (req.body.status !== "ok") {
+      const error = new Error(
+        "پرداخت باموفقیت انجام نشد وشمانتوانستید عضو بشید"
+      );
+      error.statusCode = 410;
+      throw error;
+    }
 
     const profilephotoss = await Gallery.find({
       user: req.userId,
@@ -369,12 +376,12 @@ exports.joinTour = async (req, res, next) => {
     const { _id, name, email } = user;
     const profile = { _id, name, email, profilephotoss };
     const post = await Blog.findById(req.body.postId);
-    const touruser = await User.findById(post.user);
-    touruser.money = (await touruser.money) + post.price;
+    // const touruser = await User.findById(post.user);
+    // touruser.money = (await touruser.money) + post.price;
 
     await post.joinedUsers.push(profile);
     // await user.joinedTours.push(post);
-    touruser.save();
+    // touruser.save();
     post.save();
     // user.save();
     res.status(200).json({ message: "حله" });
@@ -676,6 +683,48 @@ exports.deleteleader = async (req, res, next) => {
     await leaders.splice(index, 1);
     user.save();
     res.status(200).json({ message: "حله" });
+  } catch (error) {
+    next(error);
+  }
+};
+exports.incomeTour = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    const posts = await Blog.find({
+      isAccept: "accept",
+      user: user._id,
+    }).sort({
+      createdAt: "desc",
+    });
+    if (!posts) {
+      const error = new Error("هیچی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+    let mon = 0;
+    let blokedmon = 0;
+    await posts.forEach((element) => {
+      let now = Math.round(Date.now());
+      let date = Math.round(element.date.getTime());
+      let tourentireprice = element.price * element.joinedUsers.length;
+      if (!element.pairtotour) {
+        if (now > date) {
+          mon = mon + tourentireprice;
+        }
+        if (now < date) {
+          blokedmon=blokedmon+tourentireprice
+
+        }
+      }
+    });
+    
+    
+    res.status(200).json({money:mon,blokedmony:blokedmon});
   } catch (error) {
     next(error);
   }

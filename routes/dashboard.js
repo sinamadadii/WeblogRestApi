@@ -9,6 +9,7 @@ router.get("/requestedPosts",authenticated, adminController.requestedPosts);
 router.get("/requestedTours",authenticated, adminController.requestedTours);
 router.put("/add-permissions",authenticated, adminController.addPermissions);
 router.get("/get-permissions", authenticated,adminController.permissions);
+router.get("/get-income", authenticated,adminController.incomeTour);
 
 router.get("/get-gallery/:id", authenticated,adminController.gallery);
 router.get("/getsinglePost/:id",authenticated, adminController.getSinglePost);

@@ -301,7 +301,7 @@ exports.editProfile = async (req, res, next) => {
 
     let usernam = null;
     if (user.type === "tourist") {
-      usernam = await User.findOne({ username: username });
+      usernam = await User.findOne({ username: username.toLowerCase() });
     }
     const usernamemail = await User.findOne({ email: email });
     if (usernamemail) {

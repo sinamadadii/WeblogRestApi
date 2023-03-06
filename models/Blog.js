@@ -63,6 +63,10 @@ const blogSchmea = new mongoose.Schema({
     default: "Recruiting",
     enum: ["Recruiting", "closed"],
   },
+  pairtotour:{
+    type:Boolean,
+    default:false
+  }
 });
 
 blogSchmea.index({ title: "text" });
