@@ -6,6 +6,7 @@ const shortId = require("shortid");
 const appRoot = require("app-root-path");
 const User = require("../models/User");
 const Gallery = require("../models/Gallery");
+const Transactions = require("../models/Transactions");
 
 const Blog = require("../models/Blog");
 const { fileFilter } = require("../utils/multer");
@@ -89,6 +90,12 @@ exports.editPost = async (req, res, next) => {
 
 exports.deletePost = async (req, res, next) => {
   try {
+    const post1 = await Blog.findById(req.params.id);
+    if (post1.joinedUsers.lngth > 0) {
+      const error = new Error("افرادعضوشده بیش از0 است نمیتوانید ");
+      error.statusCode = 401;
+      throw error;
+    }
     const post = await Blog.findByIdAndDelete(req.params.id);
     post.thumbnail.forEach((item) => {
       const filePath = `${appRoot}/public/uploads/thumbnails/${item}`;
@@ -100,6 +107,17 @@ exports.deletePost = async (req, res, next) => {
         }
       });
     });
+
+    const userssaved = await User.find({ saveds: { $in: [post] } });
+    await userssaved.forEach(async (element) => {
+      const saveds = await element.saveds;
+      const index = await saveds.findIndex(
+        (obj) => req.params.id === obj._id.toString()
+      );
+      await saveds.splice(index, 1);
+      element.save();
+    });
+
     res.status(200).json({ message: "حله" });
   } catch (err) {
     next();
@@ -306,6 +324,29 @@ exports.createGallery = async (req, res, next) => {
     next(error);
   }
 };
+exports.createTransactions = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    user.money = (await user.money) - req.body.price;
+    user.save()
+    await Transactions.create({
+      user: user._id,
+      createdAt: Date.now(),
+      amount: req.body.price,
+      paired: false,
+    });
+
+    res.status(200).json({ message: "حله" });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.setCampCity = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
@@ -376,12 +417,12 @@ exports.joinTour = async (req, res, next) => {
     const { _id, name, email } = user;
     const profile = { _id, name, email, profilephotoss };
     const post = await Blog.findById(req.body.postId);
-    // const touruser = await User.findById(post.user);
-    // touruser.money = (await touruser.money) + post.price;
+    const touruser = await User.findById(post.user);
+    touruser.blockedmoney = (await touruser.blockedmoney) + post.price;
 
     await post.joinedUsers.push(profile);
     // await user.joinedTours.push(post);
-    // touruser.save();
+    touruser.save();
     post.save();
     // user.save();
     res.status(200).json({ message: "حله" });
@@ -706,25 +747,28 @@ exports.incomeTour = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-    let mon = 0;
-    let blokedmon = 0;
-    await posts.forEach((element) => {
-      let now = Math.round(Date.now());
-      let date = Math.round(element.date.getTime());
-      let tourentireprice = element.price * element.joinedUsers.length;
-      if (!element.pairtotour) {
-        if (now > date) {
-          mon = mon + tourentireprice;
-        }
-        if (now < date) {
-          blokedmon=blokedmon+tourentireprice
 
+    await posts.forEach(async (element) => {
+      let now = new Date();
+      let date = element.date;
+      let tourentireprice = element.price * element.joinedUsers.length;
+      if (now > date) {
+        if (!element.pairtotour) {
+          user.money = user.money + tourentireprice;
+          user.blockedmoney = user.blockedmoney - tourentireprice;
+          element.pairtotour = true;
+          element.save();
+          user.save();
         }
       }
     });
-    
-    
-    res.status(200).json({money:mon,blokedmony:blokedmon});
+    const trans = await Transactions.find({ user: user._id });
+
+    res.status(200).json({
+      blokedmony: user.blockedmoney,
+      money: user.money,
+      transactions: trans,
+    });
   } catch (error) {
     next(error);
   }

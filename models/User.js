@@ -60,6 +60,10 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  blockedmoney: {
+    type: Number,
+    default: 0,
+  },
   saveds: {
     type: Array,
   },
