@@ -12,6 +12,7 @@ router.get("/get-permissions", authenticated,adminController.permissions);
 router.get("/get-income", authenticated,adminController.incomeTour);
 
 router.get("/get-gallery/:id", authenticated,adminController.gallery);
+router.get("/get-alltrans", authenticated,adminController.alltransactionstoadmin);
 router.get("/getsinglePost/:id",authenticated, adminController.getSinglePost);
 router.get("/getleaders",authenticated, adminController.getLeaders);
 router.get("/getusersearch/:text",authenticated, adminController.searchuser);
@@ -19,6 +20,7 @@ router.get("/getusersearch/:text",authenticated, adminController.searchuser);
 router.post("/add-gallery",authenticated, adminController.createGallery);
 router.post("/add-transactions",authenticated, adminController.createTransactions);
 router.put("/join-tour",authenticated, adminController.joinTour);
+router.put("/pair-trans",authenticated, adminController.setpairtransaction);
 router.put("/unjoin-tour",authenticated, adminController.unJoinTour);
 router.put("/delete-thumb",authenticated, adminController.deletethumbnail);
 

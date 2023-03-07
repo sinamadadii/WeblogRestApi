@@ -333,7 +333,7 @@ exports.createTransactions = async (req, res, next) => {
       throw error;
     }
     user.money = (await user.money) - req.body.price;
-    user.save()
+    user.save();
     await Transactions.create({
       user: user._id,
       createdAt: Date.now(),
@@ -724,6 +724,48 @@ exports.deleteleader = async (req, res, next) => {
     await leaders.splice(index, 1);
     user.save();
     res.status(200).json({ message: "حله" });
+  } catch (error) {
+    next(error);
+  }
+};
+exports.alltransactionstoadmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (user.type !== "admin") {
+      const error = new Error(" مجورندارید");
+      error.statusCode = 404;
+      throw error;
+    }
+    const transactions = await Transactions.find({ paired: false }).populate('user');
+
+    res.status(200).json(transactions);
+  } catch (error) {
+    next(error);
+  }
+};
+exports.setpairtransaction = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (user.type !== "admin") {
+      const error = new Error(" مجورندارید");
+      error.statusCode = 404;
+      throw error;
+    }
+    const transaction = await Transactions.findById(req.body.id);
+    transaction.paired = await req.body.data.toString();
+    await transaction.save();
+
+    res.status(200).json({message:'حله'});
   } catch (error) {
     next(error);
   }
