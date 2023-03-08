@@ -4,26 +4,37 @@ const { authenticated } = require("../middlewares/auth");
 const adminController = require("../controllers/adminController");
 
 const router = new Router();
-router.get("/getMyPosts/:id",authenticated, adminController.getMyPosts);
+router.get("/getMyPosts",authenticated, adminController.getMyPosts);
 router.get("/requestedPosts",authenticated, adminController.requestedPosts);
 router.get("/requestedTours",authenticated, adminController.requestedTours);
 router.put("/add-permissions",authenticated, adminController.addPermissions);
-router.get("/get-permissions/:id", authenticated,adminController.permissions);
+router.get("/get-permissions", authenticated,adminController.permissions);
+router.get("/get-income", authenticated,adminController.incomeTour);
 
 router.get("/get-gallery/:id", authenticated,adminController.gallery);
+router.get("/get-alltrans", authenticated,adminController.alltransactionstoadmin);
 router.get("/getsinglePost/:id",authenticated, adminController.getSinglePost);
+router.get("/getleaders",authenticated, adminController.getLeaders);
+router.get("/getusersearch/:text",authenticated, adminController.searchuser);
+// router.get("/gettransactions",authenticated, adminController.transactions);
 router.post("/add-gallery",authenticated, adminController.createGallery);
+router.post("/add-transactions",authenticated, adminController.createTransactions);
 router.put("/join-tour",authenticated, adminController.joinTour);
+router.put("/pair-trans",authenticated, adminController.setpairtransaction);
 router.put("/unjoin-tour",authenticated, adminController.unJoinTour);
+router.put("/delete-thumb",authenticated, adminController.deletethumbnail);
 
 router.put("/save-tour",authenticated, adminController.addSaveds);
+router.put("/add-leader",authenticated, adminController.addleaders);
 router.put("/unsave-tour",authenticated, adminController.unSaved);
+router.put("/delete-leader",authenticated, adminController.deleteleader);
 
 router.get("/saveds",authenticated, adminController.saveds);
 router.get("/joineds",authenticated, adminController.joineds);
 
 router.post("/is-saved",authenticated, adminController.isSaved);
 router.post("/is-joined",authenticated, adminController.isJoined);
+router.post("/setcampCity",authenticated, adminController.setCampCity);
 
 router.put("/delte-galley/:name",authenticated, adminController.deleteGallery);
 

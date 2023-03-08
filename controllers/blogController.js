@@ -4,25 +4,25 @@ const Blog = require("../models/Blog");
 const { sendEmail } = require("../utils/mailer");
 const User = require("../models/User");
 const Gallery = require("../models/Gallery");
+const jwt = require("jsonwebtoken");
 
 let CAPTCHA_NUM;
 
 exports.getIndex = async (req, res, next) => {
   try {
-    const numberOfPosts = await Blog.find({
+    const posts = await Blog.find({
       isAccept: "accept",
-    }).countDocuments();
-
-    const posts = await Blog.find({ isAccept: "accept" }).sort({
+      city: req.params.city,
+    }).sort({
       createdAt: "desc",
     });
-    if (!posts) {
+    if (posts.length === 0) {
       const error = new Error("هیچی نیس");
-      error.statusCode = 404;
+      error.statusCode = 408;
       throw error;
     }
 
-    res.status(200).json({ posts, total: numberOfPosts });
+    res.status(200).json({ posts });
   } catch (err) {
     next(err);
   }
@@ -47,10 +47,45 @@ exports.getCampTours = async (req, res, next) => {
     next(err);
   }
 };
+exports.getCampLeaders = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      const error = new Error("هیچی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+    const leaders = await user.leaders;
+
+    res.status(200).json(leaders);
+  } catch (err) {
+    next(err);
+  }
+};
 exports.getCampGallery = async (req, res, next) => {
   try {
     const posts = await Gallery.find({
       user: req.params.id,
+      type: "permissionphoto",
+    }).sort({
+      createdAt: "desc",
+    });
+    if (!posts) {
+      const error = new Error("هیچی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.getRelatedTours = async (req, res, next) => {
+  try {
+    const posts = await Blog.find({
+      type: req.body.typep,
+      _id: { $ne: req.body.id },
     }).sort({
       createdAt: "desc",
     });
@@ -67,28 +102,47 @@ exports.getCampGallery = async (req, res, next) => {
 };
 exports.getPopularCamps = async (req, res, next) => {
   try {
-    const camps = await User.find({ type: "tour" })
+    const camps = await User.find({ type: "tour", city: req.params.city })
       .sort({
         rate: -1,
       })
       .limit(5);
-    if (!camps) {
-      const error = new Error("هیچی نیس");
-      error.statusCode = 404;
-      throw error;
-    }
+
+    const profilePhotos = await Gallery.find({
+      type: "profilephoto",
+    }).sort({
+      createdAt: "desc",
+    });
     const popCamps = [];
-    camps.forEach((element) => {
-      const obj = { id: "", photo: "",rate:0 };
+    await camps.forEach(async (element) => {
+      const obj = {
+        id: "",
+        rate: 0,
+        profilePhotos: [],
+        description: "",
+        name: "",
+      };
+      const arr = [];
+
+      await profilePhotos.forEach((param) => {
+        if (param.user.toString() === element._id.toString()) {
+          arr.push(param);
+        }
+      });
       obj.id = element._id;
-      obj.photo = element.profilePhoto;
+      obj.profilePhotos = arr;
       obj.rate = element.rate;
       obj.description = element.description;
       obj.name = element.name;
+      obj.leaders = element.leaders;
 
       popCamps.push(obj);
     });
-
+    if (popCamps.length === 0) {
+      const error = new Error("هیچی نیس");
+      error.statusCode = 408;
+      throw error;
+    }
     res.status(200).json(popCamps);
   } catch (err) {
     next(err);
@@ -97,14 +151,14 @@ exports.getPopularCamps = async (req, res, next) => {
 
 exports.getPopularTours = async (req, res, next) => {
   try {
-    const tours = await Blog.find({ isAccept: "accept" })
+    const tours = await Blog.find({ isAccept: "accept", city: req.params.city })
       .sort({
         capacity: 1,
       })
       .limit(5);
-    if (!tours) {
+    if (tours.length === 0) {
       const error = new Error("هیچی نیس");
-      error.statusCode = 404;
+      error.statusCode = 408;
       throw error;
     }
 
@@ -123,9 +177,37 @@ exports.getSinglePost = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
+    const obj = {
+      _id: post._id,
+      date: post.date,
+      body: post.body,
+      capacity: post.capacity,
+      createdAt: post.createdAt,
+      durationTime: post.durationTime,
+      isAccept: post.isAccept,
+      title: post.title,
+      type: post.type,
+      thumbnail: post.thumbnail,
+      joinedUsers: post.joinedUsers,
+      price: post.price,
+    };
     res
       .status(200)
-      .json({ post: post, user: { id: user._id, name: user.name } });
+      .json({ post: obj, user: { id: user._id, name: user.name } });
+  } catch (err) {
+    next(err);
+  }
+};
+exports.getpostjoiners = async (req, res, next) => {
+  try {
+    const post = await Blog.findById(req.params.id);
+
+    if (!post) {
+      const error = new Error("هیجی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+    res.status(200).json(post.joinedUsers);
   } catch (err) {
     next(err);
   }
@@ -133,7 +215,12 @@ exports.getSinglePost = async (req, res, next) => {
 exports.getSingleuser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
-
+    const profilePhotos = await Gallery.find({
+      user: req.params.id,
+      type: "profilephoto",
+    }).sort({
+      createdAt: "desc",
+    });
     if (!user) {
       const error = new Error("هیجی نیس");
       error.statusCode = 404;
@@ -142,7 +229,10 @@ exports.getSingleuser = async (req, res, next) => {
 
     res.status(200).json({
       name: user.name,
-      photo: user.profilePhoto,
+      profilePhotos: profilePhotos,
+      description: user.description,
+      rate: user.rate,
+      id: user._id,
     });
   } catch (err) {
     next(err);

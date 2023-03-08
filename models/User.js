@@ -6,12 +6,17 @@ const { schema } = require("./secure/userValidation");
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, "نام و نام خانوادگی الزامی می باشد"],
+    // required: [true, "نام و نام خانوادگی الزامی می باشد"],
     trim: true,
   },
   email: {
     type: String,
     required: true,
+    unique: true,
+  },
+  username: {
+    type: String,
+    // required: true,
     unique: true,
   },
   password: {
@@ -33,15 +38,7 @@ const userSchema = new mongoose.Schema({
     enum: ["tourist", "tour", "admin"],
     required: true,
   },
-  profilePhoto: {
-    type: String,
-    default: "defaultProfile.jpg",
-  },
-  profilePhotos: {
-    type: Array,
-    maxlength: 12,
-    default: ["defaultProfile.jpg"],
-  },
+
   description: {
     type: String,
     default: "",
@@ -58,14 +55,19 @@ const userSchema = new mongoose.Schema({
     default: "accept",
     enum: ["accept", "waiting", "reject"],
   },
-  permissions: {
-    type: Array,
-  },
+ 
   money: {
     type: Number,
     default: 0,
   },
+  blockedmoney: {
+    type: Number,
+    default: 0,
+  },
   saveds: {
+    type: Array,
+  },
+  leaders: {
     type: Array,
   },
   city: {
@@ -73,6 +75,11 @@ const userSchema = new mongoose.Schema({
     default: "Tehran",
     enum: ["Tabriz", "Tehran", "Alborz"],
   },
+  rnumb:{
+    type:Number,
+    default: 0,
+
+  }
 });
 
 userSchema.statics.userValidation = function (body) {

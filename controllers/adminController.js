@@ -6,6 +6,7 @@ const shortId = require("shortid");
 const appRoot = require("app-root-path");
 const User = require("../models/User");
 const Gallery = require("../models/Gallery");
+const Transactions = require("../models/Transactions");
 
 const Blog = require("../models/Blog");
 const { fileFilter } = require("../utils/multer");
@@ -41,9 +42,9 @@ exports.getSinglePost = async (req, res, next) => {
 
 exports.editPost = async (req, res, next) => {
   const thumbnails = req.files ? Object.values(req.files) : [];
-  const thumbnailsnames = [];
 
   const post = await Blog.findOne({ _id: req.params.id });
+  const thumbnailsnames = post.thumbnail;
 
   try {
     if (!post) {
@@ -69,14 +70,18 @@ exports.editPost = async (req, res, next) => {
         .catch((err) => console.log(err));
     });
 
-    const { title, isAccept, body, date, durationTime, capacity } = req.body;
+    const { title, isAccept, body, date, durationTime, capacity, type, price } =
+      req.body;
     post.title = title;
-    post.isAccept = isAccept;
+    post.isAccept = "waiting";
     post.body = body;
+    post.type = type;
+    post.price = price;
     post.date = date;
     post.durationTime = durationTime;
     post.capacity = capacity;
-    (post.thumbnail = thumbnailsnames), await post.save();
+    post.thumbnail = thumbnailsnames;
+    await post.save();
     res.status(200).json({ message: "حله" });
   } catch (err) {
     next(err);
@@ -85,7 +90,13 @@ exports.editPost = async (req, res, next) => {
 
 exports.deletePost = async (req, res, next) => {
   try {
-    await Blog.findByIdAndDelete(req.params.id);
+    const post1 = await Blog.findById(req.params.id);
+    if (post1.joinedUsers.lngth > 0) {
+      const error = new Error("افرادعضوشده بیش از0 است نمیتوانید ");
+      error.statusCode = 401;
+      throw error;
+    }
+    const post = await Blog.findByIdAndDelete(req.params.id);
     post.thumbnail.forEach((item) => {
       const filePath = `${appRoot}/public/uploads/thumbnails/${item}`;
       fs.unlink(filePath, (err) => {
@@ -96,6 +107,17 @@ exports.deletePost = async (req, res, next) => {
         }
       });
     });
+
+    const userssaved = await User.find({ saveds: { $in: [post] } });
+    await userssaved.forEach(async (element) => {
+      const saveds = await element.saveds;
+      const index = await saveds.findIndex(
+        (obj) => req.params.id === obj._id.toString()
+      );
+      await saveds.splice(index, 1);
+      element.save();
+    });
+
     res.status(200).json({ message: "حله" });
   } catch (err) {
     next();
@@ -137,16 +159,17 @@ exports.uploadImage = (req, res, next) => {
 exports.acceptPost = async (req, res, next) => {
   try {
     const post = await Blog.findById(req.body.id);
+    const admin = await User.findById(req.userId);
     if (!post) {
       const error = new Error("هیجی نیس");
       error.statusCode = 404;
       throw error;
     }
-    // if (user.role !== process.env.ADMINROLE) {
-    //   const error = new Error("شمامجوزویرایش اینو ندارید ");
-    //   error.statusCode = 401;
-    //   throw error;
-    // }
+    if (admin.type !== "admin") {
+      const error = new Error("شمامجوزندارید");
+      error.statusCode = 401;
+      throw error;
+    }
     post.isAccept = req.body.data.toString();
     post.save();
     res.status(200).json({ message: "حله" });
@@ -185,6 +208,33 @@ exports.requestedPosts = async (req, res, next) => {
     }
 
     res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.deletethumbnail = async (req, res, next) => {
+  try {
+    const post = await Blog.findById(req.body.id);
+    if (req.userId.toString() !== post.user.toString()) {
+      const error = new Error("شمادسترسی به این عمل راندارید ");
+      error.statusCode = 403;
+      throw error;
+    }
+    const thumbnails = await post.thumbnail;
+    const index = thumbnails.findIndex((q) => q === req.body.name);
+    await thumbnails.splice(index, 1);
+    post.save();
+
+    const filePath = `${appRoot}/public/uploads/thumbnails/${req.body.name}`;
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        const error = new Error("خطای پاکسازی ");
+        error.statusCode = 400;
+        throw error;
+      } else {
+        res.status(200).json({ message: "حله" });
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -239,6 +289,7 @@ exports.createPost = async (req, res, next) => {
       ...req.body,
       user: req.userId,
       thumbnail: thumbnailsnames,
+      city: user.city,
     });
     res.status(200).json({ message: "حله", post: post });
   } catch (err) {
@@ -273,7 +324,44 @@ exports.createGallery = async (req, res, next) => {
     next(error);
   }
 };
+exports.createTransactions = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    user.money = (await user.money) - req.body.price;
+    user.save();
+    await Transactions.create({
+      user: user._id,
+      createdAt: Date.now(),
+      amount: req.body.price,
+      paired: false,
+    });
 
+    res.status(200).json({ message: "حله" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.setCampCity = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    user.city = req.body.city;
+    user.save();
+    res.status(200).json({ message: "حله" });
+  } catch (err) {
+    next();
+  }
+};
 exports.deleteGallery = async (req, res, next) => {
   try {
     const gallery = await Gallery.findOneAndDelete(req.params.id);
@@ -295,7 +383,7 @@ exports.gallery = async (req, res, next) => {
   try {
     const gallery = await Gallery.find({
       user: req.userId,
-      type: "galleryphoto",
+      type: "permissionphoto",
     }).sort({
       createdAt: "desc",
     });
@@ -307,12 +395,30 @@ exports.gallery = async (req, res, next) => {
 exports.joinTour = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (req.body.status !== "ok") {
+      const error = new Error(
+        "پرداخت باموفقیت انجام نشد وشمانتوانستید عضو بشید"
+      );
+      error.statusCode = 410;
+      throw error;
+    }
 
-    const { _id, name, email, profilePhoto } = user;
-    const profile = { _id, name, email, profilePhoto };
+    const profilephotoss = await Gallery.find({
+      user: req.userId,
+      type: "profilephoto",
+    }).sort({
+      createdAt: "desc",
+    });
+    const { _id, name, email } = user;
+    const profile = { _id, name, email, profilephotoss };
     const post = await Blog.findById(req.body.postId);
     const touruser = await User.findById(post.user);
-    touruser.money = (await touruser.money) + post.price;
+    touruser.blockedmoney = (await touruser.blockedmoney) + post.price;
 
     await post.joinedUsers.push(profile);
     // await user.joinedTours.push(post);
@@ -326,26 +432,18 @@ exports.joinTour = async (req, res, next) => {
 };
 exports.unJoinTour = async (req, res, next) => {
   try {
-    // const user = await User.findById(req.userId);
     const post = await Blog.findById(req.body.postId);
     const joinedUsersTour = await post.joinedUsers;
-    // const joinedToursUser = await user.joinedTours;
-    // const tour = joinedToursUser.find(
-    //   (q) => q._id.toString() === req.body.postId
-    // );
-    const joineduser = joinedUsersTour.find(
+
+    const index = joinedUsersTour.findIndex(
       (q) => q._id.toString() === req.userId
     );
-    const { _id, name, email, profilePhoto } = joineduser;
-    const profile = { _id, name, email, profilePhoto };
     const touruser = await User.findById(post.user);
     touruser.money = (await touruser.money) - post.price;
 
-    // await joinedToursUser.splice(tour, 1);
-    await joinedUsersTour.splice(profile, 1);
+    await joinedUsersTour.splice(index, 1);
     touruser.save();
     post.save();
-    // user.save();
     res.status(200).json({ message: "حله" });
   } catch (err) {
     next(err);
@@ -382,7 +480,7 @@ exports.addPermissions = async (req, res, next) => {
 exports.permissions = async (req, res, next) => {
   try {
     const auser = await Gallery.find({
-      user: req.params.id,
+      user: req.userId,
       type: "permissionphoto",
     });
     res.status(200).json(auser);
@@ -415,10 +513,13 @@ exports.unSaved = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-    const posts = await user.saveds;
-    const post = posts.find((q) => q._id.toString() === req.body.postId);
 
-    await posts.splice(post, 1);
+    const savedposts = await user.saveds;
+    const index = await savedposts.findIndex(
+      (obj) => req.body.postId === obj._id.toString()
+    );
+
+    await savedposts.splice(index, 1);
     user.save();
     res.status(200).json({ message: "حله" });
   } catch (error) {
@@ -444,7 +545,13 @@ exports.joineds = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
     const { _id, name, email, profilePhoto } = user;
-    const profile = { _id, name, email, profilePhoto };
+    const profilephotoss = await Gallery.find({
+      user: req.userId,
+      type: "profilephoto",
+    }).sort({
+      createdAt: "desc",
+    });
+    const profile = { _id, name, email, profilephotoss };
     const toursjoined = await Blog.find({ joinedUsers: { $in: [profile] } });
     if (!user) {
       const error = new Error("چنین یوزری نیست");
@@ -492,5 +599,219 @@ exports.isJoined = async (req, res, next) => {
     res.status(200).json(uuu);
   } catch (err) {
     next(err);
+  }
+};
+exports.searchuser = async (req, res, next) => {
+  try {
+    const regex = new RegExp(req.params.text);
+    const users = await User.find({
+      username: { $regex: regex },
+      type: "tourist",
+    });
+    const usertour = await User.findById(req.userId);
+    const gallery = await Gallery.find({
+      type: "profilephoto",
+    }).sort({
+      createdAt: "desc",
+    });
+    if (usertour.isAccept !== "accept") {
+      const error = new Error("مجوزهای شماهنوز تایید نشده است");
+      error.statusCode = 405;
+      throw error;
+    }
+    const users2 = [];
+    await users.forEach(async (element) => {
+      const obj = {
+        id: "",
+        profilePhotos: [],
+        email: "",
+        name: "",
+        username: "",
+      };
+      const arr = [];
+
+      await gallery.forEach((param) => {
+        if (param.user.toString() === element._id.toString()) {
+          arr.push(param);
+        }
+      });
+      obj.id = element._id;
+      obj.profilePhotos = arr;
+      obj.email = element.email;
+      obj.name = element.name;
+      obj.username = element.username;
+
+      users2.push(obj);
+    });
+    if (users2.length === 0) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 408;
+      throw error;
+    }
+    res.status(200).json(users2);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.addleaders = async (req, res, next) => {
+  try {
+    const leader = await User.findById(req.body.id);
+    if (!leader) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    const leaders = user.leaders;
+    leaders.forEach((element) => {
+      if (element._id.toString() === leader._id.toString()) {
+        const error = new Error("شماقبلااین کاربررواضافه کردید");
+        error.statusCode = 409;
+        throw error;
+      }
+    });
+
+    const profilephotoss = await Gallery.find({
+      user: req.body.id,
+      type: "profilephoto",
+    }).sort({
+      createdAt: "desc",
+    });
+    const { _id, name, email, username } = leader;
+    const profile = { _id, name, email, username, profilephotoss };
+
+    await user.leaders.push(profile);
+    user.save();
+    res.status(200).json({ message: "حله" });
+  } catch (err) {
+    next(err);
+  }
+};
+exports.getLeaders = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("هیچی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+    let leaders = await user.leaders;
+
+    res.status(200).json(leaders);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.deleteleader = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const leaders = await user.leaders;
+    const index = await leaders.findIndex(
+      (obj) => req.body.id === obj._id.toString()
+    );
+
+    await leaders.splice(index, 1);
+    user.save();
+    res.status(200).json({ message: "حله" });
+  } catch (error) {
+    next(error);
+  }
+};
+exports.alltransactionstoadmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (user.type !== "admin") {
+      const error = new Error(" مجورندارید");
+      error.statusCode = 404;
+      throw error;
+    }
+    const transactions = await Transactions.find({ paired: false }).populate('user');
+
+    res.status(200).json(transactions);
+  } catch (error) {
+    next(error);
+  }
+};
+exports.setpairtransaction = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (user.type !== "admin") {
+      const error = new Error(" مجورندارید");
+      error.statusCode = 404;
+      throw error;
+    }
+    const transaction = await Transactions.findById(req.body.id);
+    transaction.paired = await req.body.data.toString();
+    await transaction.save();
+
+    res.status(200).json({message:'حله'});
+  } catch (error) {
+    next(error);
+  }
+};
+exports.incomeTour = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("چنین یوزری نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+    const posts = await Blog.find({
+      isAccept: "accept",
+      user: user._id,
+    }).sort({
+      createdAt: "desc",
+    });
+    if (!posts) {
+      const error = new Error("هیچی نیس");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await posts.forEach(async (element) => {
+      let now = new Date();
+      let date = element.date;
+      let tourentireprice = element.price * element.joinedUsers.length;
+      if (now > date) {
+        if (!element.pairtotour) {
+          user.money = user.money + tourentireprice;
+          user.blockedmoney = user.blockedmoney - tourentireprice;
+          element.pairtotour = true;
+          element.save();
+          user.save();
+        }
+      }
+    });
+    const trans = await Transactions.find({ user: user._id });
+
+    res.status(200).json({
+      blokedmony: user.blockedmoney,
+      money: user.money,
+      transactions: trans,
+    });
+  } catch (error) {
+    next(error);
   }
 };

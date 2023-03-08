@@ -26,7 +26,6 @@ exports.isAuth = (req, res, next) => {
       error.statusCode = 401;
       throw error;
     }
-    // req.userId=decodedToken.user.userId
     res.status(200).json(true);
   } catch (error) {
     next(error);
@@ -35,13 +34,17 @@ exports.isAuth = (req, res, next) => {
 exports.handleLogin = async (req, res, next) => {
   const { email, password } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      $or: [{ email: email }, { username: email }],
+    });
     if (!user) {
       const error = new Error("کاربری یافت نشد");
       error.statusCode = 404;
       throw error;
     }
-
+    const profilePhotos = await Gallery.find({ user: user._id,type:'profilephoto' }).sort({
+      createdAt: "desc",
+    });
     const isEqual = await bcrypt.compare(password, user.password);
     if (isEqual) {
       const token = jwt.sign(
@@ -60,25 +63,15 @@ exports.handleLogin = async (req, res, next) => {
       if (user.type == "admin") {
         res.status(200).json({
           token,
-          userId: user._id.toString(),
-          userEmail: user.email,
-          name: user.name,
           type: "admin",
         });
       }
       if (user.type == "tour") {
         res.status(206).json({
           token,
-          userId: user._id.toString(),
-          userEmail: user.email,
-          name: user.name,
-          type: "tour",
-          profilePhoto: user.profilePhoto,
-          description: user.description,
-          rate: user.rate,
+          profilePhotos,
+          city: user.city,
           isAccept: user.isAccept,
-          phoneNumber: user.phoneNumber,
-          money: user.money,
         });
       }
       if (user.type == "tourist") {
@@ -107,7 +100,7 @@ exports.handleLogin = async (req, res, next) => {
 exports.createUser = async (req, res, next) => {
   try {
     await User.userValidation(req.body);
-    const { name, email, password, type } = req.body;
+    const { name, email, password, type, city } = req.body;
     const user = await User.findOne({ email });
     let isAccept = "accept";
     // let type = "admin"
@@ -120,7 +113,7 @@ exports.createUser = async (req, res, next) => {
       error.statusCode = 422;
       throw error;
     } else {
-      await User.create({ name, email, password, type, isAccept });
+      await User.create({ name, email, password, type, isAccept, city });
 
       //? Send Welcome Email
       // sendEmail(
@@ -135,22 +128,22 @@ exports.createUser = async (req, res, next) => {
     next(err);
   }
 };
-exports.handleForgetPassword = async (req, res, next) => {
-  const { email } = req.body;
-  try {
-    const user = await User.findOne({ email: email });
 
+exports.handleForgetPassword = async (req, res, next) => {
+  const { email } = await req.body;
+  try {
+    const user = await User.findOne({
+      $or: [{ email: email }, { username: email }],
+    });
     if (!user) {
-      const error = new Error("چنین ایمیلی موجود نیست");
+      const error = new Error("چنین کاربری موجود نیست");
       error.statusCode = 404;
       throw error;
     }
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
-    const resetLink = `http://localhost:3000/users/reset-password/${token}`;
-
+    const rnumb = Math.floor(Math.random() * (99999 - 10000)) + 10000;
+    user.rnumb = rnumb;
+    await user.save();
+    console.log(rnumb);
     // sendEmail(
     //   user.email,
     //   user.name,
@@ -161,7 +154,43 @@ exports.handleForgetPassword = async (req, res, next) => {
     // `
     // );
 
-    res.status(200).json({ message: "ایمیل فرستاده شد" });
+    res.status(200).json({ message: "ایمیل فرستاده شد", userId: user._id });
+  } catch (error) {
+    next(error);
+  }
+};
+exports.handleForgetPasswordResieved = async (req, res, next) => {
+  const { id, rnumb } = await req.body;
+
+  try {
+    const user = await User.findById(id);
+
+    const token = jwt.sign(
+      {
+        user: {
+          userId: user._id.toString(),
+          email: user.email,
+          name: user.name,
+        },
+      },
+      process.env.JWT_SECRET
+      // {
+      //   expiresIn: "1h",
+      // }
+    );
+    if (!user) {
+      const error = new Error("چنین کاربری موجود نیست");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (Number(rnumb) !== user.rnumb) {
+      const error = new Error("کدواردشده اشتباه است");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    res.status(200).json({ token });
   } catch (error) {
     next(error);
   }
@@ -181,6 +210,47 @@ exports.handleResetPassword = async (req, res, next) => {
     }
     const user = await User.findOne({ _id: decodedToken.user.userId });
 
+    if (newPassword !== confirmPassword) {
+      const error = new Error("کلمه های عبوریکسان نیست");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    if (!user) {
+      const error = new Error("کاربری موجودنیست");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    user.password = newPassword;
+    await user.save();
+    res.status(200).json({ message: "حله" });
+  } catch (error) {
+    next(error);
+  }
+};
+exports.handleChangePassword = async (req, res, next) => {
+  const user = await User.findById(req.userId);
+
+  const { oldPassword, newPassword, confirmPassword } = await req.body;
+  const isEqual = await bcrypt.compare(oldPassword, user.password);
+
+  try {
+    if (!newPassword) {
+      const error = new Error("کلمه عبور نباید کمتر از 4 کاراکتر باشد");
+      error.statusCode = 401;
+      throw error;
+    }
+    if (newPassword.length < 4) {
+      const error = new Error("کلمه عبور نباید کمتر از 4 کاراکتر باشد");
+      error.statusCode = 401;
+      throw error;
+    }
+    if (!isEqual) {
+      const error = new Error("کلمه عبورنادرست است");
+      error.statusCode = 401;
+      throw error;
+    }
     if (newPassword !== confirmPassword) {
       const error = new Error("کلمه های عبوریکسان نیست");
       error.statusCode = 401;
@@ -228,18 +298,30 @@ exports.editProfile = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-    const {
-      profilePhotos,
-      profilePhoto,
-      name,
-      description,
-      email,
-      phoneNumber,
-    } = req.body;
-    user.profilePhotos = profilePhotos;
-    user.profilePhoto = profilePhoto;
+    const { username, name, description, email, phoneNumber } = req.body;
+
+    let usernam = null;
+    if (user.type === "tourist") {
+      usernam = await User.findOne({ username: username.toLowerCase() });
+    }
+    const usernamemail = await User.findOne({ email: email });
+    if (usernamemail) {
+      if (usernamemail._id.toString() !== req.userId) {
+        const error = new Error("چنین  ایمیلی موجود است");
+        error.statusCode = 406;
+        throw error;
+      }
+    }
+    if (usernam) {
+      if (usernam._id.toString() !== req.userId) {
+        const error = new Error("چنین نام کاربری موجود است");
+        error.statusCode = 406;
+        throw error;
+      }
+    }
 
     user.name = name;
+    user.username = username?.toLowerCase();
     user.description = description;
     user.email = email;
     user.phoneNumber = phoneNumber;
@@ -255,7 +337,7 @@ exports.editProfile = async (req, res, next) => {
 exports.userProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
-    const profilePhotos = await Gallery.find({ user: req.userId }).sort({
+    const profilePhotos = await Gallery.find({ user: req.userId,type:'profilephoto' }).sort({
       createdAt: "desc",
     });
     if (!user) {
@@ -270,8 +352,12 @@ exports.userProfile = async (req, res, next) => {
       phoneNumber: user.phoneNumber,
       createdAt: user.createdAt,
       type: user.type,
+      username: user.username,
       profilePhotos: profilePhotos,
       description: user.description,
+      city: user.city,
+      money: user.money,
+      isAccept: user.isAccept,
     });
   } catch (err) {
     next(err);
@@ -291,10 +377,10 @@ exports.uploadProfilePhoto = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-    files.forEach((element) => {
-      const fileName = `${shortId.generate()}_${element.name}`;
+    files.forEach(async (element) => {
+      const fileName = `${shortId.generate()}_${await element.name}`;
       const uploadPath = `${appRoot}/public/uploads/profilePhotos/${fileName}`;
-      sharp(element.data)
+      sharp(await element.data)
         .jpeg({ quality: 60 })
         .toFile(uploadPath)
         .catch((err) => console.log(err));
